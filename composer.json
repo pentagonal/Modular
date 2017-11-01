@@ -1,6 +1,6 @@
 {
     "name": "pentagonal/modular",
-    "description": "Easy php module storage for small project",
+    "description": "Easy php module storage collector for small project",
     "type": "library",
     "license": "MIT",
     "authors": [
