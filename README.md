@@ -13,10 +13,8 @@ Incomplete Dev (Under Development)
 
 ## LIBRARIES
 
-```txt
-pentagonal/array-store      1.0.x
-pentagonal/php-evaluator    1.0.x
-```
+- [`pentagonal/array-store "~1"`](https://github.com/pentagonal/ArrayStore)
+- [`pentagonal/php-evaluator "~1"`](https://github.com/pentagonal/PhpEvaluator)
 
 ## LICENSE
 
