@@ -25,6 +25,7 @@
 
 namespace Pentagonal\Modular;
 
+use Pentagonal\Modular\Override\SplFileInfo;
 use Pentagonal\PhpEvaluator\BadSyntaxExceptions;
 use Pentagonal\PhpEvaluator\Evaluator;
 
@@ -35,6 +36,9 @@ use Pentagonal\PhpEvaluator\Evaluator;
  */
 final class PhpFileEvaluator
 {
+    /**
+     * @var SplFileInfo
+     */
     protected $spl;
 
     const PENDING    = 0;
@@ -57,9 +61,9 @@ final class PhpFileEvaluator
     /**
      * PhpFileEvaluator constructor.
      *
-     * @param SplModuleFileInfo $spl
+     * @param SplFileInfo $spl
      */
-    public function __construct(SplModuleFileInfo $spl)
+    public function __construct(SplFileInfo $spl)
     {
         $this->spl = $spl;
     }
@@ -125,17 +129,15 @@ final class PhpFileEvaluator
      */
     public static function fromFile(string $filePath) : PhpFileEvaluator
     {
-        return self::create(new SplModuleFileInfo($filePath));
+        return self::create(new SplFileInfo($filePath));
     }
 
     /**
-     * Create instance
-     *
-     * @param SplModuleFileInfo $info
+     * @param SplFileInfo $info
      *
      * @return PhpFileEvaluator
      */
-    public static function create(SplModuleFileInfo $info) : PhpFileEvaluator
+    public static function create(SplFileInfo $info) : PhpFileEvaluator
     {
         return new self($info);
     }
