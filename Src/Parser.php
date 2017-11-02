@@ -27,6 +27,10 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
+use Pentagonal\ArrayStore\StorageArray;
+use Pentagonal\Modular\Override\DirectoryIterator;
+use Pentagonal\Modular\Override\SplFileInfo;
+
 /**
  * Class Parser
  * @package Pentagonal\Modular
@@ -40,7 +44,7 @@ class Parser
     /**
      * @var SplFileInfo
      */
-    protected $splFilePath;
+    protected $splFileInfo;
 
     /**
      * @var bool
@@ -66,71 +70,61 @@ class Parser
      *
      * @var string
      */
-    protected $fileIndexed;
+    protected $fileIndexed = '';
 
     /**
-     * @var \Throwable
+     * @var StorageArray
      */
-    protected $exceptions;
+    protected $checkedFiles;
+
+    /**
+     * @var StorageArray|SplFileInfo
+     */
+    protected $fileLists;
 
     /**
      * Parser constructor.
      * @final
-     * @access private
+     * @access internal|private
      */
     final private function __construct()
     {
+        $this->fileIndexed  = '';
+        $this->className    = '';
+        $this->selector     = '';
+        $this->hasParsed    = false;
+        $this->splFileInfo  = null;
+        $this->checkedFiles = new StorageArray();
+        $this->fileLists    = new StorageArray();
         // pass
     }
 
     /**
      * Create instance of Parser
-     * @param string $directoryPathOfModule
      *
+     * @param DirectoryIterator $di
+     *
+     * @final
      * @return Parser
      */
-    public static function create(string $directoryPathOfModule) : Parser
+    final public static function create(DirectoryIterator $di) : Parser
     {
-        $object = new static();
-        $object->splFilePath = new SplFileInfo($directoryPathOfModule);
-        if (! $object->splFilePath->isDir()) {
+        $object              = new static();
+        if (! $di->isDir() || $di->isDot()) {
             throw new \RuntimeException(
                 sprintf(
-                    '%s is not a valid directory',
-                    $object->splFilePath->getPathname()
+                    '%1$s is not a valid directory. Path type is %2$s',
+                    $di->getPathname(),
+                    $di->getType()
                 ),
-                E_NOTICE
+                E_NOTICE,
+                $di->getRealPath() ?: $di->getPathname()
             );
         }
 
+        $object->splFileInfo = $di->getFileInfo();
+
         return $object;
-    }
-
-    /**
-     * Doing parsing process
-     *
-     * @return Parser
-     */
-    public function parse() : Parser
-    {
-        if ($this->hasParsed === true) {
-            return $this;
-        }
-
-        $this->hasParsed = true;
-
-        // @todo logic parsing process
-        return $this;
-    }
-
-    /**
-     * Check if module valid
-     *
-     * @return bool
-     */
-    public function isValid() : bool
-    {
-        return (bool) ! $this->parse()->exceptions;
     }
 
     /**
@@ -138,9 +132,9 @@ class Parser
      *
      * @return SplFileInfo
      */
-    public function getSplFilePath() : SplFileInfo
+    public function getSplFileInfo() : SplFileInfo
     {
-        return $this->splFilePath;
+        return $this->splFileInfo;
     }
 
     /**
@@ -180,12 +174,74 @@ class Parser
     }
 
     /**
-     * Get Error Exceptions
+     * Check if module valid
      *
-     * @return \Throwable|null
+     * @return bool
      */
-    public function getExceptions()
+    public function isValid() : bool
     {
-        return $this->parse()->exceptions;
+        try {
+            $className = $this->parse()->getClassName();
+            return $className
+                   && class_exists($className)
+                   && is_subclass_of($className, Module::class);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Doing parsing process
+     *
+     * @return Parser
+     */
+    public function parse() : Parser
+    {
+        if ($this->hasParsed === true) {
+            return $this;
+        }
+
+        $this->hasParsed = true;
+        foreach (new DirectoryIterator($this->getSplFileInfo()->getPathname()) as $value) {
+            if ($value->isDot()) {
+                continue;
+            }
+
+            $name = $value->getFilename();
+            $this->fileLists[$name] = $value->getFileInfo();
+
+            /*
+             * if file size less than 74 chars so it will be ignored
+             * below is example very minimum requirements
+             * 74 characters:
+             *
+             * <?php class A extends M{function initialize(){}function getInfo():array{}}
+             */
+            if ($value->getSize() < 74
+                // file extension must be php
+                || $value->getExtension() !== 'php'
+                // do not allow hidden files
+                || strpos($name, '.') === 0
+                // if can not read do not process
+                || ! $value->isReadable()
+            ) {
+                continue;
+            }
+
+            if ($this->validateFileModule($value) === true) {
+                break;
+            }
+        }
+
+        // @todo logic parsing process
+        return $this;
+    }
+
+    protected function validateFileModule(\SplFileInfo $spl) : bool
+    {
+        $spl = $spl->getFileInfo();
+        $this->checkedFiles[$spl->getFilename()] = microtime(true);
+        // @todo parsing process
+        return false;
     }
 }

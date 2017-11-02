@@ -23,24 +23,40 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
+namespace Pentagonal\Modular\Exceptions;
 
-namespace Pentagonal\Modular;
-
-use Pentagonal\Modular\Interfaces\ParseGetterInterface;
-use Pentagonal\Modular\Override\DirectoryIterator;
+use Throwable;
 
 /**
- * Class ParserGetter
- * @package Pentagonal\Modular
+ * Class ModulePathException
+ * @package Pentagonal\Modular\Exceptions
  */
-class ParserGetter implements ParseGetterInterface
+class ModulePathException extends ModuleException
 {
     /**
-     * {@inheritdoc}
+     * @var string
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
+    protected $path;
+
+    /**
+     * ModulePathException constructor.
+     *
+     * @param string $message
+     * @param int $code
+     * @param string $path
+     * @param Throwable|null $previous
+     */
+    public function __construct(string $message = "", int $code = 0, string $path = '', Throwable $previous = null)
     {
-        return Parser::create($directoryIterator);
+        parent::__construct($message, $code, $previous);
+        $this->path = $path;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath() : string
+    {
+        return $this->path;
     }
 }

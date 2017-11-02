@@ -27,7 +27,8 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular\PhpUnit;
 
-use Pentagonal\Modular\SplFileInfo;
+use Pentagonal\Modular\FileType;
+use Pentagonal\Modular\Override\SplFileInfo;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -49,7 +50,7 @@ class SplFileInfoTest extends TestCase
 
         $this->assertEquals(
             $spl->getType(),
-            SplFileInfo::TYPE_FILE
+            FileType::TYPE_FILE
         );
 
         $spl2 = new SplFileInfo(__DIR__);
@@ -64,7 +65,7 @@ class SplFileInfoTest extends TestCase
 
         $this->assertEquals(
             $spl2->getType(),
-            SplFileInfo::TYPE_DIR
+            FileType::TYPE_DIR
         );
     }
 
@@ -96,7 +97,7 @@ class SplFileInfoTest extends TestCase
         $spl = new SplFileInfo(__DIR__ . '/invalid-file-not-exists');
         $this->assertEquals(
             $spl->getType(),
-            SplFileInfo::TYPE_UNKNOWN
+            FileType::TYPE_UNKNOWN
         );
     }
 

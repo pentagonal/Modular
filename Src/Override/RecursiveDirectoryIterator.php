@@ -25,22 +25,37 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular;
-
-use Pentagonal\Modular\Interfaces\ParseGetterInterface;
-use Pentagonal\Modular\Override\DirectoryIterator;
+namespace Pentagonal\Modular\Override;
 
 /**
- * Class ParserGetter
+ * Class RecursiveDirectoryIterator
  * @package Pentagonal\Modular
  */
-class ParserGetter implements ParseGetterInterface
+class RecursiveDirectoryIterator extends \RecursiveDirectoryIterator
 {
+    use FileInfoTrait;
+
     /**
      * {@inheritdoc}
+     * @return \DirectoryIterator
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
+    public function current() : \SplFileInfo
     {
-        return Parser::create($directoryIterator);
+        $current = parent::current();
+        if (is_object($current)) {
+            switch (get_class($current)) {
+                case \SplFileInfo::class:
+                    $current = new SplFileInfo($current->getPathName());
+                    break;
+                case \RecursiveDirectoryIterator::class:
+                    $current = new static($current->getPathName());
+                    break;
+                case \DirectoryIterator::class:
+                    $current = new DirectoryIterator($current->getPathName());
+                    break;
+            }
+        }
+
+        return $current;
     }
 }

@@ -27,6 +27,13 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
+use Pentagonal\ArrayStore\StorageArray;
+use Pentagonal\ArrayStore\StorageArrayObject;
+use Pentagonal\ArrayStore\StorageInterface;
+use Pentagonal\Modular\Exceptions\ModulePathException;
+use Pentagonal\Modular\Interfaces\ParseGetterInterface;
+use Pentagonal\Modular\Override\DirectoryIterator;
+
 /**
  * Class Reader
  * @package Pentagonal\Modular
@@ -35,9 +42,9 @@ namespace Pentagonal\Modular;
 class Reader
 {
     /**
-     * @var SplFileInfo
+     * @var DirectoryIterator[]
      */
-    protected $fileInfo;
+    protected $directoryIterator;
 
     /**
      * @var ParserGetter
@@ -45,24 +52,70 @@ class Reader
     protected $parserGetter;
 
     /**
+     * @var StorageInterface
+     */
+    protected $notDirectories;
+
+    /**
+     * @var StorageInterface
+     */
+    protected $listsModules;
+
+    /**
      * Reader constructor.
      *
-     * @param SplFileInfo $fileInfo
-     * @param ParserGetter $parserGetter
+     * @param string $directory
+     * @param ParseGetterInterface|null $parserGetter
      */
-    public function __construct(SplFileInfo $fileInfo, ParserGetter $parserGetter = null)
-    {
-        $this->fileInfo = $fileInfo;
-        if ($this->fileInfo->isDir()) {
-            throw new \InvalidArgumentException(
+    public function __construct(
+        string $directory,
+        ParseGetterInterface $parserGetter = null
+    ) {
+        $directory = realpath($directory) ?: $directory;
+        if (!is_dir($directory)) {
+            throw new ModulePathException(
                 sprintf(
                     'Path %s is not a directory',
-                    $this->fileInfo->getPathname()
+                    $directory
                 ),
-                E_WARNING
+                E_WARNING,
+                $directory
             );
         }
 
-        $this->parserGetter = $parserGetter?: new ParserGetter();
+        $this->directoryIterator = new DirectoryIterator($directory);
+        $this->parserGetter      = $parserGetter?: new ParserGetter();
+    }
+
+    /**
+     * Begin process
+     *
+     * @return Reader
+     */
+    public function process() : Reader
+    {
+        if ($this->listsModules instanceof StorageArrayObject) {
+            return $this;
+        }
+
+        $this->listsModules   = new StorageArrayObject();
+        $this->notDirectories = new StorageArray();
+        foreach ($this->directoryIterator as $key => $recursiveIterator) {
+            if ($recursiveIterator->isDot()) {
+                continue;
+            }
+
+            $name = $recursiveIterator->getBasename();
+            if ($recursiveIterator->isDir()) {
+                $this->listsModules[$name] = $this
+                    ->parserGetter
+                    ->getParserInstance($recursiveIterator)
+                    ->parse();
+                continue;
+            }
+            $this->notDirectories[$name] = $recursiveIterator->getFileInfo();
+        }
+
+        return $this;
     }
 }

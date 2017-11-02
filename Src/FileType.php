@@ -27,20 +27,23 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
-use Pentagonal\Modular\Interfaces\ParseGetterInterface;
-use Pentagonal\Modular\Override\DirectoryIterator;
-
 /**
- * Class ParserGetter
+ * Class FileType
  * @package Pentagonal\Modular
+ * @final just for reference
  */
-class ParserGetter implements ParseGetterInterface
+final class FileType
 {
     /**
-     * {@inheritdoc}
+     * Fallback unknown type to prevent errors
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
-    {
-        return Parser::create($directoryIterator);
-    }
+    const TYPE_UNKNOWN = 'unknown';
+
+    /**
+     * @see \SplFileInfo
+     * @link http://php.net/manual/en/splfileinfo.gettype.php
+     */
+    const TYPE_DIR      = 'dir';
+    const TYPE_SYMLINK  = 'link';
+    const TYPE_FILE     = 'file';
 }

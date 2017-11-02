@@ -31,6 +31,7 @@ use Pentagonal\PhpEvaluator\Evaluator;
 /**
  * Class PhpFileEvaluator
  * @package Pentagonal\Modular
+ * @final
  */
 final class PhpFileEvaluator
 {
@@ -56,11 +57,11 @@ final class PhpFileEvaluator
     /**
      * PhpFileEvaluator constructor.
      *
-     * @param SplFileInfo $es
+     * @param SplModuleFileInfo $spl
      */
-    public function __construct(SplFileInfo $es)
+    public function __construct(SplModuleFileInfo $spl)
     {
-        $this->spl = $es;
+        $this->spl = $spl;
     }
 
     /**
@@ -68,7 +69,7 @@ final class PhpFileEvaluator
      */
     public function getStatus() : string
     {
-        return $this->validate()->status;
+        return $this->status;
     }
 
     /**
@@ -90,11 +91,11 @@ final class PhpFileEvaluator
         }
 
         try {
-            $this->status = self::OK;
             Evaluator::check(
                 $this->spl->getContents(),
                 $this->spl->getRealPath()
             );
+            $this->status = self::OK;
         } catch (BadSyntaxExceptions $e) {
             $this->errorExceptions = $e;
             $this->status = $e->getCode();
@@ -112,7 +113,7 @@ final class PhpFileEvaluator
      */
     public function isValid() : bool
     {
-        return $this->getStatus() === self::OK;
+        return $this->validate()->getStatus() === self::OK;
     }
 
     /**
@@ -124,17 +125,17 @@ final class PhpFileEvaluator
      */
     public static function fromFile(string $filePath) : PhpFileEvaluator
     {
-        return self::create(new SplFileInfo($filePath));
+        return self::create(new SplModuleFileInfo($filePath));
     }
 
     /**
      * Create instance
      *
-     * @param SplFileInfo $info
+     * @param SplModuleFileInfo $info
      *
      * @return PhpFileEvaluator
      */
-    public static function create(SplFileInfo $info) : PhpFileEvaluator
+    public static function create(SplModuleFileInfo $info) : PhpFileEvaluator
     {
         return new self($info);
     }

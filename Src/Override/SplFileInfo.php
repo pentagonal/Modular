@@ -25,22 +25,16 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular;
+namespace Pentagonal\Modular\Override;
 
-use Pentagonal\Modular\Interfaces\ParseGetterInterface;
-use Pentagonal\Modular\Override\DirectoryIterator;
+use Pentagonal\Modular\FileType;
 
 /**
- * Class ParserGetter
- * @package Pentagonal\Modular
+ * Class SplFileInfo
+ * @package Pentagonal\Modular\Override
  */
-class ParserGetter implements ParseGetterInterface
+class SplFileInfo extends \SplFileInfo
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
-    {
-        return Parser::create($directoryIterator);
-    }
+    use ContentOutputBufferTrait;
+    use FileInfoTrait;
 }

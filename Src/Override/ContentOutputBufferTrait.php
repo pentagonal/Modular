@@ -23,54 +23,14 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
-
-namespace Pentagonal\Modular;
+namespace Pentagonal\Modular\Override;
 
 /**
- * Class SplFileInfo
- * @package Pentagonal\Modular
+ * Trait ContentOutputBufferTrait
+ * @package Pentagonal\Modular\Override
  */
-class SplFileInfo extends \SplFileInfo
+trait ContentOutputBufferTrait
 {
-    /**
-     * Fallback unknown type to prevent errors
-     */
-    const TYPE_UNKNOWN = 'unknown';
-
-    /**
-     * @see \SplFileInfo
-     * @link http://php.net/manual/en/splfileinfo.gettype.php
-     */
-    const TYPE_DIR      = 'dir';
-    const TYPE_SYMLINK  = 'link';
-    const TYPE_FILE     = 'file';
-
-    /**
-     * SplFileInfo constructor.
-     *
-     * @param string $path absolute path
-     */
-    public function __construct(string $path)
-    {
-        parent::__construct($path);
-    }
-
-    /**
-     * Handle invalid type and forward to @uses SplFileInfo::TYPE_UNKNOWN
-     *
-     * @return string
-     */
-    public function getType() : string
-    {
-        try {
-            // maybe invalid
-            return parent::getType();
-        } catch (\Throwable $e) {
-            return self::TYPE_UNKNOWN;
-        }
-    }
-
     /**
      * Get content with output buffer
      *
@@ -78,12 +38,24 @@ class SplFileInfo extends \SplFileInfo
      */
     public function getContentsOutputBuffer()
     {
+        if (!$this instanceof \SplFileInfo) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Trait %1$s must be used on %2$s instance',
+                    __TRAIT__,
+                    \SplFileInfo::class
+                )
+            );
+        }
+
+        /**
+         * @var \SplFileInfo $this
+         */
         if (!$this->isFile()) {
             throw new \RuntimeException(
                 sprintf(
-                    'Can not read %1$s because the type is not a file, the type is "%2$s"',
-                    $this->getPathname(),
-                    $this->getType()
+                    'Can not read %1$s because the type is not a file',
+                    $this->getPathname()
                 ),
                 E_WARNING
             );

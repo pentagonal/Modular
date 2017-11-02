@@ -23,24 +23,22 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
+namespace Pentagonal\Modular\Interfaces;
 
-namespace Pentagonal\Modular;
-
-use Pentagonal\Modular\Interfaces\ParseGetterInterface;
 use Pentagonal\Modular\Override\DirectoryIterator;
+use Pentagonal\Modular\Parser;
 
 /**
- * Class ParserGetter
- * @package Pentagonal\Modular
+ * Interface ParseGetterInterface
+ * @package Pentagonal\Modular\Interfaces
  */
-class ParserGetter implements ParseGetterInterface
+interface ParseGetterInterface
 {
     /**
-     * {@inheritdoc}
+     * Get @uses Parser instance
+     * @param DirectoryIterator $directoryIterator
+     *
+     * @return Parser
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
-    {
-        return Parser::create($directoryIterator);
-    }
+    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser;
 }
