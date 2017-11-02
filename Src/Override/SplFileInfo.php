@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular\Override;
 
-use Pentagonal\Modular\FileType;
-
 /**
  * Class SplFileInfo
  * @package Pentagonal\Modular\Override
