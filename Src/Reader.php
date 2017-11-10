@@ -33,6 +33,7 @@ use Pentagonal\ArrayStore\StorageInterface;
 use Pentagonal\Modular\Exceptions\ModulePathException;
 use Pentagonal\Modular\Interfaces\ParseGetterInterface;
 use Pentagonal\Modular\Override\DirectoryIterator;
+use Pentagonal\Modular\Override\SplFileInfo;
 
 /**
  * Class Reader
@@ -44,7 +45,7 @@ class Reader
     /**
      * @var DirectoryIterator[]
      */
-    protected $directoryIterator;
+    protected $spl;
 
     /**
      * @var ParserGetter
@@ -83,8 +84,8 @@ class Reader
             );
         }
 
-        $this->directoryIterator = new DirectoryIterator($directory);
-        $this->parserGetter      = $parserGetter?: new ParserGetter();
+        $this->spl          = new SplFileInfo($directory);
+        $this->parserGetter = $parserGetter?: new ParserGetter();
     }
 
     /**
@@ -100,22 +101,27 @@ class Reader
 
         $this->listsModules   = new StorageArrayObject();
         $this->notDirectories = new StorageArray();
-        foreach ($this->directoryIterator as $key => $recursiveIterator) {
-            if ($recursiveIterator->isDot()) {
+        /**
+         * @var DirectoryIterator $directoryIterator
+         */
+        foreach (new DirectoryIterator($this->spl->getRealPath()) as $key => $directoryIterator) {
+            if ($directoryIterator->isDot()) {
                 continue;
             }
 
-            $name = $recursiveIterator->getBasename();
-            if ($recursiveIterator->isDir()) {
+            $name = $directoryIterator->getBasename();
+            if ($directoryIterator->getType() === FileType::TYPE_DIR) {
                 $this->listsModules[$name] = $this
                     ->parserGetter
-                    ->getParserInstance($recursiveIterator)
+                    ->getParserInstance($directoryIterator)
                     ->parse();
                 continue;
             }
-            $this->notDirectories[$name] = $recursiveIterator->getFileInfo();
-        }
 
+            $this->notDirectories[$name] = $directoryIterator->getFileInfo(SplFileInfo::class);
+        }
+        print_r($this);
+        exit;
         return $this;
     }
 }

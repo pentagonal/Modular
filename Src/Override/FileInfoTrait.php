@@ -112,4 +112,29 @@ trait FileInfoTrait
             return FileType::TYPE_UNKNOWN;
         }
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isDot()
+    {
+        if (is_callable('parent::isDot')) {
+            return parent::isDot();
+        }
+        $name = $this->getBasename();
+        return $name === '.' || $name === '..';
+    }
+
+    /**
+     * check if it exists
+     *
+     * @return bool
+     */
+    public function exist()
+    {
+        if (is_callable('parent::exist')) {
+            return parent::exist();
+        }
+        return is_string($this->getRealPath());
+    }
 }

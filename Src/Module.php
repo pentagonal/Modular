@@ -99,21 +99,21 @@ abstract class Module
      *
      * @var string
      */
-    protected $module_name          = '';
+    protected $name          = '';
 
     /**
      * Module Description
      *
      * @var string
      */
-    protected $module_description   = '';
+    protected $description   = '';
 
     /**
      * @return string
      */
-    public function getModuleName() : string
+    public function getName() : string
     {
-        return $this->module_name;
+        return $this->name;
     }
 
     /**
@@ -121,9 +121,9 @@ abstract class Module
      *
      * @return string
      */
-    public function getModuleDescription() : string
+    public function getDescription() : string
     {
-        return $this->module_description;
+        return $this->description;
     }
 
     /**

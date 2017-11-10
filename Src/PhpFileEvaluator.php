@@ -49,7 +49,7 @@ final class PhpFileEvaluator
     const E_ERROR    = Evaluator::E_ERROR;
 
     /**
-     * @var string
+     * @var int|bool
      */
     protected $status = self::PENDING;
 
@@ -69,9 +69,9 @@ final class PhpFileEvaluator
     }
 
     /**
-     * @return string
+     * @return bool|int
      */
-    public function getStatus() : string
+    public function getStatus()
     {
         return $this->status;
     }
