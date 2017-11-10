@@ -380,6 +380,7 @@ class Parser
             $this->classExtends = null;
             $this->exception    = $e;
         }
+
         return $this;
     }
 
