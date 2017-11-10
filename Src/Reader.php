@@ -43,7 +43,7 @@ use Pentagonal\Modular\Override\SplFileInfo;
 class Reader
 {
     /**
-     * @var DirectoryIterator[]
+     * @var SplFileInfo
      */
     protected $spl;
 
@@ -120,8 +120,8 @@ class Reader
 
             $this->notDirectories[$name] = $directoryIterator->getFileInfo(SplFileInfo::class);
         }
-        print_r($this);
-        exit;
+
+        // @todo completion
         return $this;
     }
 }
