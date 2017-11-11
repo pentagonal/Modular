@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Pentagonal\Modular;
 
 use Pentagonal\ArrayStore\StorageArray;
+use Pentagonal\Modular\Exceptions\ModuleException;
 
 /**
  * Class Module
@@ -46,9 +47,9 @@ abstract class Module
     private $reserved_construct_arguments;
 
     /**
-     * @var string
+     * @var Parser
      */
-    private $reserved_construct_module_selector;
+    private $reserved_construct_parser;
 
     /**
      * @var bool
@@ -58,12 +59,12 @@ abstract class Module
     /**
      * Module constructor.
      *
-     * @param string $selector the module selector
+     * @param Parser $parser the module selector
      */
-    final public function __construct(string $selector)
+    final public function __construct(Parser $parser)
     {
         if ($this->reserved_constructor_is_called) {
-            throw new \RuntimeException(
+            throw new ModuleException(
                 sprintf(
                     '%s constructor only allow called once',
                     get_class($this)
@@ -71,17 +72,44 @@ abstract class Module
             );
         }
 
-        $args                                     = func_get_args();
-        $this->reserved_construct_module_selector = array_shift($args);
-        $this->reserved_construct_arguments       = new StorageArray($args);
+        $reflection = new \ReflectionClass($this);
+        if ($parser->getSplFileIndexed()->getRealPath() !== $reflection->getFileName()) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'object %s must be pointing to class %s file',
+                    get_class($parser),
+                    __CLASS__
+                )
+            );
+        }
+
+        $this->reserved_constructor_is_called = true;
+        $this->reserved_construct_parser = $parser;
+        $args                            = func_get_args();
+        array_shift($args);
+        $this->reserved_construct_arguments = new StorageArray($args);
+        if (!is_string($this->name)) {
+            $this->name = $parser->getBasename();
+        }
     }
 
     /**
      * @return StorageArray
+     * @access protected
      */
     final protected function getConstructorArguments() : StorageArray
     {
         return $this->reserved_construct_arguments;
+    }
+
+    /**
+     * Get current Module Parser
+     *
+     * @return Parser
+     */
+    final protected function getConstructorParser() : Parser
+    {
+        return $this->reserved_construct_parser;
     }
 
     /**
@@ -91,7 +119,7 @@ abstract class Module
      */
     final public function getModuleSelector() : string
     {
-        return $this->reserved_construct_module_selector;
+        return $this->getConstructorParser()->getSelector();
     }
 
     /**
@@ -99,7 +127,7 @@ abstract class Module
      *
      * @var string
      */
-    protected $name          = '';
+    protected $name          = null;
 
     /**
      * Module Description
