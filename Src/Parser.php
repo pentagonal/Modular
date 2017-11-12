@@ -405,6 +405,7 @@ class Parser
                 $realPath = $this->splFileIndexed->getRealPath();
                 // by pass include
                 $includeFile($realPath);
+
                 $reflection           = new \ReflectionClass($this->getModuleClassName());
                 $this->className      = $reflection->getName();
                 if ($reflection->isAbstract()) {
@@ -455,13 +456,13 @@ class Parser
         $fullPath                             = $spl->getRealPath();
         $fileName                             = pathinfo($baseName, PATHINFO_FILENAME);
         $pathName                             = pathinfo($spl->getPath(), PATHINFO_FILENAME);
-        $this->checkedFilesMessage[$fullPath] = null;
         $validClassName                       = [strtolower($fileName) => $fileName];
 
         if (!preg_match(self::CLASS_NAME_REGEX, $fileName, $match) || empty($match[1])) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(
                 sprintf('Module file name %s invalid context', $baseName)
             );
+
             return false;
         }
 
@@ -469,14 +470,18 @@ class Parser
             $validClassName[strtolower($pathName)] = $pathName;
         }
 
-        $evaluator = PhpFileEvaluator::create($spl);
-        if (!$evaluator->isValid()) {
-            $this->checkedFilesMessage[$fullPath] = $evaluator->getException();
+        // get files content with php_strip_whitespace to remove
+        // unwanted content
+        $content = php_strip_whitespace($spl->getRealPath());
+
+        // pass if content length less than minimum
+        if (strlen($content) < static::MIN_FILE_SIZE) {
             return false;
         }
 
-        $content = php_strip_whitespace($spl->getRealPath());
-        // validate regex
+        /**
+         * Getting match content
+         */
         preg_match_all(
             '~
             namespace(
@@ -484,15 +489,24 @@ class Parser
                         \s+\\\?(?:[^;]+);   # named namespace
                     )|\s*\{                 # empty namespace
                 )
-                | class\s+([_a-z](?:[a-z0-9_]+)?)
+                | \bclass\s+([_a-z](?:[a-z0-9_]+)?)
                 | extends\s+
                     (?:\\\)?                                # name space none
                     (
                         (?:[_a-z](?:[a-z0-9_]+)?)           # base extends
                         (?:(?:\\\[_a-z][a-z0-9_]+){1,})?
                     )
-               | function\s+(initialize\((?:[^\)]+)?\))           # base method initialize()
-               | function\s+(getInfo\((?:[^\)]+)?\))\s*\:\s*array # base method getInfo()
+                | 
+                # Final method
+                function\s+(
+                    __construct
+                    | finalGetConstructorArguments
+                    | finalGetConstructorParser
+                    | finalGetConstructorInfo
+                    | finalInitOnce
+                )\s*\(
+                | function\s+(initialize\s*\((?:[^\)]+)?\))           # base method initialize()
+                | function\s+(getInfo\s*\((?:[^\)]+)?\))\s*\:\s*array # base method getInfo()
                 \s*\{(.*?)\}
              ~mixs',
             // strip the white space
@@ -500,18 +514,31 @@ class Parser
             $match,
             PREG_PATTERN_ORDER
         );
+
+        /**
+         * Offset Selector
+         */
         $offsetNameSpace    = 1;
         $offsetClass        = 2;
         $offsetExtends      = 3;
-        $offsetMethodInit   = 4;
-        $offsetMethodInfo   = 5;
-        $offsetMethodInfoParenthesis = 6;
+        $offsetMethodFinal  = 4;
+        $offsetMethodInit   = 5;
+        $offsetMethodInfo   = 6;
+        $offsetMethodInfoParenthesis = 7;
 
+        // Check for module class content
         if (empty($match[$offsetClass])        # class
             || empty($match[$offsetExtends])   # extends
             || empty(array_filter($match[$offsetClass]))
             || empty(array_filter($match[$offsetExtends]))
         ) {
+            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                sprintf(
+                    '%s Invalid Module file.',
+                    $baseName
+                )
+            );
+
             return false;
         }
 
@@ -531,13 +558,11 @@ class Parser
         }
 
         // class name
-        $className = !empty($match[$offsetClass][$classPos])
-            ? $match[$offsetClass][$classPos]
-            : null;
+        $className = !empty($match[$offsetClass][$classPos]) ? $match[$offsetClass][$classPos] : null;
         // parent class
-        $parentClass   = !empty($match[$offsetExtends][$classPos+1])
-            ? $match[$offsetExtends][$classPos+1]
-            : null;
+        $parentClass   = !empty($match[$offsetExtends][$classPos+1]) ? $match[$offsetExtends][$classPos+1] : null;
+        // check of existences class and parent class
+        // or if invalid name space
         if (! $className    # does not contains class
             || ! $parentClass # does not contains extends module
             # is contains name space but invalid
@@ -554,12 +579,44 @@ class Parser
                         $baseName
                     )
                 );
+
+            return false;
+        }
+
+        // check if class matching criteria
+        if (!isset($validClassName[strtolower($className)])) {
+            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                sprintf(
+                    'base class of %1$s has not matching criteria. Class name must be one of : %2$s',
+                    $className,
+                    implode(', ', $validClassName)
+                )
+            );
+
             return false;
         }
 
         $className = "{$nameSpace}\\{$className}";
         if (!$nameSpace) {
             $className = substr($className, 1);
+        }
+
+        // check that contains override final method
+        $match[$offsetMethodFinal] = array_map('strtolower', array_filter($match[$offsetMethodFinal]));
+        if (!empty($match[$offsetMethodFinal])
+            && (
+                count($match[$offsetClass]) === 1
+                || key($match[$offsetMethodFinal]) < ($offsetMethodInfoParenthesis-1)
+            )
+        ) {
+            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                sprintf(
+                    'Class %s contains override final method',
+                    $className
+                )
+            );
+
+            return false;
         }
 
         /**
@@ -583,7 +640,6 @@ class Parser
         $getInfo       = array_shift($getInfo);
         $getInfoInner  = array_filter($match[$offsetMethodInfoParenthesis]);
         $getInfoInner  = array_shift($getInfoInner);
-
         if ($getInfo) {
             // append bracket
             $getInfoInner = "{{$getInfoInner}";
@@ -657,6 +713,12 @@ class Parser
                     }
                 }
             }
+        }
+
+        $evaluator = PhpContentEvaluator::create($spl);
+        if (!$evaluator->isValid()) {
+            $this->checkedFilesMessage[$fullPath] = $evaluator->getException();
+            return false;
         }
 
         // found

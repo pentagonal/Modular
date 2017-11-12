@@ -30,16 +30,18 @@ use Pentagonal\PhpEvaluator\BadSyntaxExceptions;
 use Pentagonal\PhpEvaluator\Evaluator;
 
 /**
- * Class PhpFileEvaluator
+ * Class PhpContentEvaluator
  * @package Pentagonal\Modular
  * @final
  */
-final class PhpFileEvaluator
+final class PhpContentEvaluator
 {
     /**
      * @var SplFileInfo
      */
     protected $spl;
+    protected $content;
+    protected $file = '';
 
     const PENDING    = 0;
     const OK         = true;
@@ -59,13 +61,30 @@ final class PhpFileEvaluator
     protected $errorExceptions;
 
     /**
-     * PhpFileEvaluator constructor.
+     * PhpContentEvaluator constructor.
      *
-     * @param SplFileInfo $spl
+     * @param \SplFileInfo|string|SplFileInfo $splOrString
+     * @param string $fileName
      */
-    public function __construct(SplFileInfo $spl)
+    public function __construct($splOrString, string $fileName = '')
     {
-        $this->spl = $spl;
+        if (!is_string($splOrString) && ! $splOrString instanceof \SplFileInfo) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Argument 1 must be as string or instance of %s',
+                    \SplFileInfo::class
+                )
+            );
+        }
+        /**
+         * @var SplFileInfo|string $splOrString
+         */
+        $this->content = is_string($splOrString)
+            ? $splOrString
+            : $splOrString->getFileInfo(SplFileInfo::class)->getContents();
+        $this->file = $splOrString instanceof \SplFileInfo
+            ? $splOrString->getRealPath()
+            : (is_string($fileName) ? $fileName : '');
     }
 
     /**
@@ -85,10 +104,10 @@ final class PhpFileEvaluator
     }
 
     /**
-     * @return PhpFileEvaluator
+     * @return PhpContentEvaluator
      * @throws \Throwable
      */
-    public function validate() : PhpFileEvaluator
+    public function validate() : PhpContentEvaluator
     {
         if ($this->status !== self::PENDING) {
             return $this;
@@ -96,8 +115,8 @@ final class PhpFileEvaluator
 
         try {
             Evaluator::check(
-                $this->spl->getContents(),
-                $this->spl->getRealPath()
+                $this->content,
+                $this->file
             );
             $this->status = self::OK;
         } catch (BadSyntaxExceptions $e) {
@@ -125,19 +144,19 @@ final class PhpFileEvaluator
      *
      * @param string $filePath
      *
-     * @return PhpFileEvaluator
+     * @return PhpContentEvaluator
      */
-    public static function fromFile(string $filePath) : PhpFileEvaluator
+    public static function fromFile(string $filePath) : PhpContentEvaluator
     {
         return self::create(new SplFileInfo($filePath));
     }
 
     /**
-     * @param SplFileInfo $info
+     * @param \SplFileInfo|SplFileInfo|string $info
      *
-     * @return PhpFileEvaluator
+     * @return PhpContentEvaluator
      */
-    public static function create(SplFileInfo $info) : PhpFileEvaluator
+    public static function create($info) : PhpContentEvaluator
     {
         return new self($info);
     }

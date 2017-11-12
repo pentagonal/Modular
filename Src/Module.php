@@ -52,12 +52,12 @@ abstract class Module
      * @var StorageArray
      * @access private
      */
-    private $reserved_construct_arguments;
+    private $reservedConstructorArguments;
 
     /**
      * @var Parser
      */
-    private $reserved_construct_parser;
+    private $reservedConstructorParser;
 
     /**
      * @var bool
@@ -92,10 +92,10 @@ abstract class Module
         }
 
         $this->reserved_constructor_is_called = true;
-        $this->reserved_construct_parser = $parser;
-        $args                            = func_get_args();
+        $this->reservedConstructorParser      = $parser;
+        $args                                 = func_get_args();
         array_shift($args);
-        $this->reserved_construct_arguments = new StorageArray($args);
+        $this->reservedConstructorArguments = new StorageArray($args);
         if (!is_string($this->name)) {
             $this->name = $parser->getBasename();
         }
@@ -108,9 +108,9 @@ abstract class Module
      * @return StorageArray
      * @access protected
      */
-    final protected function getConstructorArguments() : StorageArray
+    final protected function finalGetConstructorArguments() : StorageArray
     {
-        return $this->reserved_construct_arguments;
+        return $this->reservedConstructorArguments;
     }
 
     /**
@@ -118,19 +118,9 @@ abstract class Module
      *
      * @return Parser
      */
-    final protected function getConstructorParser() : Parser
+    final protected function finalGetConstructorParser() : Parser
     {
-        return $this->reserved_construct_parser;
-    }
-
-    /**
-     * Get Selector Module
-     *
-     * @return string
-     */
-    final public function getModuleSelector() : string
-    {
-        return $this->getConstructorParser()->getSelector();
+        return $this->reservedConstructorParser;
     }
 
     /**
@@ -138,7 +128,7 @@ abstract class Module
      *
      * @return array
      */
-    final public function getConstructBaseInfo() : array
+    final public function finalGetConstructorInfo() : array
     {
         return [
             self::KEY_NAME          => $this->name,
@@ -151,7 +141,7 @@ abstract class Module
      *
      * @return Module
      */
-    final public function configureConstructInit() : Module
+    final public function finalInitOnce() : Module
     {
         if ($this->hasCallInit) {
             return $this;
@@ -159,6 +149,7 @@ abstract class Module
 
         $this->hasCallInit = true;
         $this->initialize();
+
         return $this;
     }
 
@@ -177,6 +168,21 @@ abstract class Module
     protected $description   = '';
 
     /**
+     * Initialize Module
+     * Better to add has init to prevent multiple call init
+     *
+     * @return mixed
+     */
+    abstract protected function initialize();
+
+    /**
+     * Module Info
+     *
+     * @return array
+     */
+    abstract public function getInfo() : array;
+
+    /**
      * @return string
      */
     public function getName() : string
@@ -193,19 +199,4 @@ abstract class Module
     {
         return $this->description;
     }
-
-    /**
-     * Initialize Module
-     * Better to add has init to prevent multiple call init
-     *
-     * @return mixed
-     */
-    abstract public function initialize();
-
-    /**
-     * Module Info
-     *
-     * @return array
-     */
-    abstract public function getInfo() : array;
 }
