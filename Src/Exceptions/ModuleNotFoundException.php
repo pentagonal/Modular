@@ -49,8 +49,8 @@ class ModuleNotFoundException extends ModuleException
      * @param Throwable|null $previous
      */
     public function __construct(
-        $message = "",
-        $code = 0,
+        string $message = "",
+        int $code = 0,
         string $moduleName = '',
         Throwable $previous = null
     ) {

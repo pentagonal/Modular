@@ -477,7 +477,17 @@ class Parser
         $content = php_strip_whitespace($spl->getRealPath());
 
         // pass if content length less than minimum
-        if (strlen($content) < static::MIN_FILE_SIZE) {
+        if (strlen($content) < static::MIN_FILE_SIZE
+            || ! preg_match(
+                '~
+                class\s+[_a-z](?:[a-z0-9_]+)?\s+
+                extends\s+\\\?[_a-z](?:[a-z0-9_]+)?(?:(?:\\\[_a-z][a-z0-9_]+){1,})?
+                ~ix',
+                $content,
+                $match
+            )
+            || empty($match[0])
+        ) {
             return false;
         }
 
@@ -603,7 +613,7 @@ class Parser
         if (!$nameSpace) {
             $className = substr($className, 1);
         }
-
+        return false;
         // check that contains override final method
         $match[$offsetMethodFinal] = array_map('strtolower', array_filter($match[$offsetMethodFinal]));
         if (!empty($match[$offsetMethodFinal])
