@@ -613,7 +613,7 @@ class Parser
         if (!$nameSpace) {
             $className = substr($className, 1);
         }
-        return false;
+
         // check that contains override final method
         $match[$offsetMethodFinal] = array_map('strtolower', array_filter($match[$offsetMethodFinal]));
         if (!empty($match[$offsetMethodFinal])
