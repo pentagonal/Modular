@@ -503,7 +503,8 @@ class Parser
                     __construct
                     | finalGetConstructorArguments
                     | finalGetConstructorParser
-                    | finalGetConstructorInfo
+                    # public
+                    | finalGetInfo
                     | finalInitOnce
                 )\s*\(
                 | function\s+(initialize\s*\((?:[^\)]+)?\))           # base method initialize()
