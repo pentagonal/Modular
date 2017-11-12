@@ -38,6 +38,14 @@ use Pentagonal\Modular\Exceptions\ModuleException;
  */
 abstract class Module
 {
+    const KEY_NAME = 'name';
+    const KEY_DESCRIPTION = 'description';
+
+    /**
+     * @var bool
+     */
+    private $hasCallInit = false;
+
     /**
      * Store constructor arguments
      *
@@ -91,6 +99,9 @@ abstract class Module
         if (!is_string($this->name)) {
             $this->name = $parser->getBasename();
         }
+        if (!is_string($this->description)) {
+            $this->description = '';
+        }
     }
 
     /**
@@ -120,6 +131,35 @@ abstract class Module
     final public function getModuleSelector() : string
     {
         return $this->getConstructorParser()->getSelector();
+    }
+
+    /**
+     * Get Base Info
+     *
+     * @return array
+     */
+    final public function getConstructBaseInfo() : array
+    {
+        return [
+            self::KEY_NAME          => $this->name,
+            self::KEY_DESCRIPTION   => $this->description
+        ];
+    }
+
+    /**
+     * Helper to call @uses Module::initialize() once
+     *
+     * @return Module
+     */
+    final public function configureConstructInit() : Module
+    {
+        if ($this->hasCallInit) {
+            return $this;
+        }
+
+        $this->hasCallInit = true;
+        $this->initialize();
+        return $this;
     }
 
     /**
@@ -156,6 +196,7 @@ abstract class Module
 
     /**
      * Initialize Module
+     * Better to add has init to prevent multiple call init
      *
      * @return mixed
      */

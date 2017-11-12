@@ -30,6 +30,7 @@ namespace Pentagonal\Modular;
 use Pentagonal\ArrayStore\StorageArrayObject as StorageArray;
 use Pentagonal\Modular\Exceptions\ModuleException;
 use Pentagonal\Modular\Exceptions\ModuleNotFoundException;
+use Pentagonal\Modular\Exceptions\ModulePathException;
 use Pentagonal\Modular\Override\DirectoryIterator;
 use Pentagonal\Modular\Override\SplFileInfo;
 
@@ -44,7 +45,30 @@ class Parser
 {
     const CLASS_NAME_REGEX = '~^([_a-zA-Z](?:[a-zA-Z0-9_]+)?)$~';
 
-    const IGNORE_INDEX = 'index.php';
+    /**
+     * Recommended to use 83 chars
+     *
+     * if file size less than 83 chars so it will be ignored
+     * below is example very minimum requirements
+     * 83 characters:
+     *
+     * <?php class A extends M{function initialize(){}function getInfo():array{return$a;}}
+     */
+    const MIN_FILE_SIZE = 83;
+
+    /**
+     * @var bool
+     */
+    protected $hasParsed = false;
+
+    /**
+     * List ignored files
+     *
+     * @var array
+     */
+    protected $ignoredFiles = [
+        'index.php'
+    ];
 
     /**
      * @var string
@@ -55,11 +79,6 @@ class Parser
      * @var SplFileInfo
      */
     protected $spl;
-
-    /**
-     * @var bool
-     */
-    protected $hasParsed = false;
 
     /**
      * Unique selector of module
@@ -80,7 +99,14 @@ class Parser
      *
      * @var string
      */
-    protected $classExtends;
+    protected $parentClass;
+
+    /**
+     * Instance Module Object
+     *
+     * @var Module|null
+     */
+    protected $moduleInstance;
 
     /**
      * The full path file loaded
@@ -114,8 +140,9 @@ class Parser
     final private function __construct()
     {
         $this->splFileIndexed      = null;
+        $this->moduleInstance      = null;
         $this->className           = null;
-        $this->classExtends        = null;
+        $this->parentClass         = null;
         $this->selector            = null;
         $this->hasParsed           = false;
         $this->spl                 = null;
@@ -134,11 +161,11 @@ class Parser
     {
         $object              = new static();
         if (! $di->isDir() || $di->isDot()) {
-            throw new \RuntimeException(
+            throw new ModulePathException(
                 sprintf(
                     '%1$s is not a valid directory. Path type is %2$s',
                     $di->getPathname(),
-                    $di->getType()
+                    !$di->isDot() ? $di->getType() : 'Dot selector directory'
                 ),
                 E_NOTICE,
                 $di->getRealPath() ?: $di->getPathname()
@@ -181,9 +208,22 @@ class Parser
     }
 
     /**
+     * @return Module
+     * @throws \Throwable
+     */
+    public function &getModuleInstance() : Module
+    {
+        if (! $this->parse()->isValid()) {
+            throw $this->exception;
+        }
+
+        return $this->moduleInstance;
+    }
+
+    /**
      * @return string|null
      */
-    public function getClassName()
+    public function getModuleClassName()
     {
         return $this->parse()->className;
     }
@@ -207,9 +247,9 @@ class Parser
     /**
      * @return string|null
      */
-    public function getClassExtends()
+    public function getParentClass()
     {
-        return $this->parse()->classExtends;
+        return $this->parse()->parentClass;
     }
 
     /**
@@ -233,12 +273,10 @@ class Parser
      *
      * @return bool
      */
-    public function isValid() : bool
+    final public function isValid() : bool
     {
-        $className = $this->parse()->getClassName();
-        return $className
-               && class_exists($className)
-               && is_subclass_of($className, Module::class);
+        $object = $this->parse()->moduleInstance;
+        return $object && $object instanceof Module;
     }
 
     /**
@@ -276,9 +314,9 @@ class Parser
             && $spl->isReadable()
         ) {
             if (!empty(self::$cachedLoadedClasses[$spl->getRealPath()])) {
-                $classes = self::$cachedLoadedClasses[$spl->getRealPath()];
-                $this->className    = array_shift($classes);
-                $this->classExtends = array_shift($classes);
+                $classes              = self::$cachedLoadedClasses[$spl->getRealPath()];
+                $this->className = array_shift($classes);
+                $this->parentClass    = array_shift($classes);
                 $this->splFileIndexed = $spl;
             } elseif ($this->validateFileModule($spl)) {
                 $this->splFileIndexed = $spl;
@@ -286,7 +324,6 @@ class Parser
         } else {
             // prop
             $toCheck    = [];
-            $foundMatch = false;
             foreach (new DirectoryIterator($path) as $iterator) {
                 if ($iterator->isDot()) {
                     continue;
@@ -299,28 +336,24 @@ class Parser
                 }
 
                 $baseName = $iterator->getBasename();
-                if ($baseName === static::IGNORE_INDEX  # ignore if index file
-                    || ! $iterator->isFile()            # if not a file
-                    /*
-                     * if file size less than 74 chars so it will be ignored
-                     * below is example very minimum requirements
-                     * 74 characters:
-                     *
-                     * <?php class A extends M{function initialize(){}function getInfo():array{}}
-                     */
-                    || $iterator->getSize() < 74    # if size less than 74 characters
+                # if not a file
+                if (! $iterator->isFile()
+                    # if in ignored files
+                    || in_array($baseName, $this->ignoredFiles)
+                    # if size less than MIN_FILE_SIZE
+                    || $iterator->getSize() < static::MIN_FILE_SIZE
                     # if extension is php / given extension
                     || $iterator->getExtension() !== $this->fileExtension
                     // if can not read do not process
                     || ! $iterator->isReadable()
-                    || ! ($fileName = pathinfo($baseName, PATHINFO_FILENAME))
                     // only allow valid class Name Regex
+                    || ! ($fileName = pathinfo($baseName, PATHINFO_FILENAME))
                     || ! preg_match(self::CLASS_NAME_REGEX, $fileName)
                 ) {
                     continue;
                 }
 
-                // process validation
+                // file info to process validation
                 $toCheck[] = $iterator->getFileInfo(SplFileInfo::class);
             }
 
@@ -337,7 +370,6 @@ class Parser
                 }
             }
 
-            unset($toCheck, $foundMatch);
             if (! $this->splFileIndexed) {
                 $this->exception = new ModuleNotFoundException(
                     sprintf(
@@ -370,11 +402,11 @@ class Parser
                     /** @noinspection PhpIncludeInspection */
                     include_once $file;
                 })->bindTo(null);
-
+                $realPath = $this->splFileIndexed->getRealPath();
                 // by pass include
-                $includeFile($this->splFileIndexed->getRealPath());
-                $reflection = new \ReflectionClass($this->getClassName());
-                $this->className = $reflection->getName();
+                $includeFile($realPath);
+                $reflection           = new \ReflectionClass($this->getModuleClassName());
+                $this->className      = $reflection->getName();
                 if ($reflection->isAbstract()) {
                     throw new ModuleException(
                         sprintf(
@@ -384,15 +416,19 @@ class Parser
                         E_NOTICE
                     );
                 }
-                self::$cachedLoadedClasses[$this->splFileIndexed->getRealPath()] = [
+
+                $this->parentClass    = $reflection->getParentClass()->getName();
+                $this->moduleInstance =& $this->newConstruct();
+                self::$cachedLoadedClasses[$realPath] = [
                     $this->className,
-                    $this->classExtends
+                    $this->parentClass
                 ];
             } catch (\Throwable $e) {
                 $this->splFileIndexed = null;
-                $this->className    = null;
-                $this->classExtends = null;
-                $this->exception    = $e;
+                $this->className      = null;
+                $this->moduleInstance = null;
+                $this->parentClass    = null;
+                $this->exception      = $e;
             }
 
             // restore error
@@ -457,6 +493,7 @@ class Parser
                     )
                | function\s+(initialize\((?:[^\)]+)?\))           # base method initialize()
                | function\s+(getInfo\((?:[^\)]+)?\))\s*\:\s*array # base method getInfo()
+                \s*\{(.*?)\}
              ~mixs',
             // strip the white space
             $content,
@@ -468,6 +505,8 @@ class Parser
         $offsetExtends      = 3;
         $offsetMethodInit   = 4;
         $offsetMethodInfo   = 5;
+        $offsetMethodInfoParenthesis = 6;
+
         if (empty($match[$offsetClass])        # class
             || empty($match[$offsetExtends])   # extends
             || empty(array_filter($match[$offsetClass]))
@@ -517,6 +556,7 @@ class Parser
                 );
             return false;
         }
+
         $className = "{$nameSpace}\\{$className}";
         if (!$nameSpace) {
             $className = substr($className, 1);
@@ -525,7 +565,9 @@ class Parser
         /**
          * Test if extendable Module object class
          */
-        if (!class_exists($parentClass) || is_subclass_of($parentClass, Module::class)) {
+        if (strtolower(Module::class) !== strtolower($parentClass)
+            && (class_exists($parentClass) || is_subclass_of($parentClass, Module::class))
+        ) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(sprintf(
                 'Extends module for %1$s is not sub class of %2$s',
                 $className,
@@ -539,9 +581,29 @@ class Parser
         $initialize    = array_shift($initialize);
         $getInfo       = array_filter($match[$offsetMethodInfo]);
         $getInfo       = array_shift($getInfo);
-        $reflectionExtends = new \ReflectionClass($parentClass);
+        $getInfoInner  = array_filter($match[$offsetMethodInfoParenthesis]);
+        $getInfoInner  = array_shift($getInfoInner);
 
-        if (!$initialize || ! $getInfo) {
+        if ($getInfo) {
+            // append bracket
+            $getInfoInner = "{{$getInfoInner}";
+            if (!$getInfoInner
+                // must have return values
+                || !preg_match('~[\s\{\};]return.+~i', $getInfoInner)
+            ) {
+                $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                    sprintf(
+                        '%1$s does not have valid return values',
+                        $className
+                    )
+                );
+
+                return false;
+            }
+        }
+
+        $reflectionExtends = new \ReflectionClass($parentClass);
+        if (! $initialize || ! $getInfo) {
             foreach (['getInfo', 'initialize'] as $method) {
                 if (empty($$method)) {
                     continue;
@@ -598,8 +660,8 @@ class Parser
         }
 
         // found
-        $this->className    = $className;
-        $this->classExtends = $reflectionExtends->getName();
+        $this->className   = $className;
+        $this->parentClass = $reflectionExtends->getName();
         return true;
     }
 
@@ -619,9 +681,9 @@ class Parser
      * @return Module
      * @throws \Throwable
      */
-    public function newInit() : Module
+    public function &newConstruct() : Module
     {
-        if (!$this->isValid()) {
+        if (!$this->className || ! is_subclass_of($this->className, Module::class)) {
             throw ($this->exception?: new ModuleException(
                 sprintf(
                     'Invalid module %s',
@@ -635,7 +697,6 @@ class Parser
          * @var Module $class
          */
         $class = new $this->className($this);
-        $class->initialize();
         return $class;
     }
 

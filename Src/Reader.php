@@ -27,10 +27,6 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
-use Pentagonal\ArrayStore\StorageArray;
-use Pentagonal\ArrayStore\StorageArrayObject;
-use Pentagonal\ArrayStore\StorageInterface;
-use Pentagonal\Modular\Exceptions\ModuleNotFoundException;
 use Pentagonal\Modular\Exceptions\ModulePathException;
 use Pentagonal\Modular\Interfaces\ParseGetterInterface;
 use Pentagonal\Modular\Override\DirectoryIterator;
@@ -53,17 +49,12 @@ class Reader
     protected $parserGetter;
 
     /**
-     * @var StorageInterface
+     * @var FileTree[]
      */
-    protected $invalidDirectories;
+    protected $invalidPaths;
 
     /**
-     * @var StorageInterface|Parser[]
-     */
-    private $listsModules;
-
-    /**
-     * @var string[]|StorageArrayObject
+     * @var Parser[]
      */
     private $invalidModules;
 
@@ -73,14 +64,9 @@ class Reader
     private $validModules = [];
 
     /**
-     * @var string[]|StorageArray
-     */
-    private $selectors;
-
-    /**
      * @var bool
      */
-    private $processed = false;
+    private $configured = false;
 
     /**
      * Reader constructor.
@@ -114,12 +100,10 @@ class Reader
      */
     private function resetProperties()
     {
-        $this->processed          = false;
-        $this->invalidModules     = new StorageArrayObject();
-        $this->validModules       = [];
-        $this->selectors          = new StorageArray();
-        $this->listsModules       = new StorageArrayObject();
-        $this->invalidDirectories = new StorageArray();
+        $this->configured     = false;
+        $this->validModules   = [];
+        $this->invalidModules = [];
+        $this->invalidPaths   = [];
     }
 
     /**
@@ -127,178 +111,74 @@ class Reader
      *
      * @return Reader
      */
-    final public function process() : Reader
+    final public function configure() : Reader
     {
-        if ($this->processed) {
+        if ($this->configured) {
             return $this;
         }
 
         // call reset properties
         $this->resetProperties();
-        $this->processed = true;
+        $this->configured = true;
+
         /**
          * @var DirectoryIterator $directoryIterator
          */
-        foreach (new DirectoryIterator($this->spl->getRealPath()) as $key => $directoryIterator) {
-            if ($directoryIterator->isDot()) {
-                continue;
-            }
-
-            $name = $directoryIterator->getBasename();
-            if ($directoryIterator->getType() === FileType::TYPE_DIR) {
-                $parser = $this
-                    ->parserGetter
-                    ->getParserInstance($directoryIterator)
-                    ->parse();
-                $this->listsModules[$name] =& $parser;
-                $this->selectors[$name] = $parser->getSelector();
-                if ($parser->isValid()) {
-                    $this->validModules[$name] = (function ($moduleName) {
-                        /**
-                         * @var Parser $this
-                         */
-                        return $this->getParserFor($moduleName)->newInit();
-                    });
-
-                    continue;
-                }
-
-                $this->invalidModules[] = $name;
-                continue;
-            }
-
-            $this->invalidDirectories[$name] = $directoryIterator->getFileInfo(SplFileInfo::class);
+        foreach (new DirectoryIterator($this->spl->getRealPath()) as $directoryIterator) {
+            $this->reConfigureModule($directoryIterator);
         }
 
         return $this;
     }
 
     /**
+     * Reconfigure
+     *
+     * @param DirectoryIterator $directoryIterator
+     */
+    private function reConfigureModule(
+        DirectoryIterator $directoryIterator
+    ) {
+        $name = $directoryIterator->getBasename();
+        if (($isDot = $directoryIterator->isDot())
+            || $directoryIterator->getType() !== FileType::TYPE_DIR
+        ) {
+            ! $isDot && $this->invalidPaths[$name] = new FileTree($directoryIterator);
+            return;
+        }
+
+        $parser = $this->parserGetter->getParserInstance($directoryIterator);
+        if ($parser->isValid()) {
+            $this->validModules[$name] =& $parser->getModuleInstance();
+            return;
+        }
+
+        $this->invalidModules[$name] = $parser;
+    }
+
+    /**
      * @return bool
      */
-    final public function isProcessed() : bool
+    final public function isConfigured() : bool
     {
-        return $this->processed;
+        return $this->configured;
     }
 
     /**
-     * @param string $name
+     * Get Invalid Modules returning instance @uses Parser
      *
-     * @return mixed|Parser
+     * @return Parser[]
      */
-    public function getParserFor(string $name)
-    {
-        return $this->process()->listsModules[$name];
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return mixed|null|string
-     */
-    public function getSelectorFor(string $name)
-    {
-        return $this->selectors[$name];
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return false|int|mixed|string
-     */
-    public function getModuleNameFor(string $name)
-    {
-        return $this->selectors->indexOf($name);
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getSelectors(): array
-    {
-        return $this->selectors;
-    }
-
-    /**
-     * @return StorageArrayObject|string[]
-     */
-    public function getInvalidModules() : StorageArrayObject
+    public function getInvalidModules()
     {
         return $this->invalidModules;
     }
 
     /**
-     * @return \closure[]|Module[]
+     * @return Module[]
      */
     public function getValidModules() : array
     {
-        foreach ($this->process()->validModules as $key => $v) {
-            if ($v instanceof \Closure) {
-                $this->validModules[$key] = $v->call($this, $key);
-            }
-        }
-
         return $this->validModules;
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return Module
-     * @throws ModuleNotFoundException
-     */
-    public function getModuleFromName(string $name) : Module
-    {
-        $module =& $this->process()->validModules[$name];
-        if (!$module) {
-            throw new ModuleNotFoundException(
-                sprintf(
-                    'Module for %s has not found',
-                    $name
-                )
-            );
-        }
-
-        if ($module instanceof \Closure) {
-            $this->validModules[$name] = $module->call($this);
-        }
-
-        return $this->validModules[$name];
-    }
-
-    /**
-     * @param string $selector
-     *
-     * @return Module
-     * @throws ModuleNotFoundException
-     */
-    public function getModuleFromSelector(string $selector) : Module
-    {
-        $moduleName = $this->process()->getModuleNameFor($selector);
-        if (!$moduleName) {
-            throw new ModuleNotFoundException(
-                sprintf(
-                    'Module for %s has not found',
-                    $selector
-                )
-            );
-        }
-
-        return $this->getModuleFromName($moduleName);
-    }
-
-    /**
-     * @param string $selectorOrName
-     *
-     * @return Module
-     * @throws ModuleNotFoundException
-     */
-    public function get(string $selectorOrName) : Module
-    {
-        if (isset($this->process()->validModules[$selectorOrName])) {
-            return $this->getModuleFromName($selectorOrName);
-        }
-
-        return $this->getModuleFromSelector($selectorOrName);
     }
 }

@@ -115,6 +115,7 @@ final class FileTree implements \ArrayAccess
         $this->storage = new StorageArray([
             $this->getBasename() => $this->readRecursive($this->spl)
         ]);
+
         return $this->storage;
     }
 
