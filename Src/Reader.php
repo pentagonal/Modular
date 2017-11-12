@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
+use Pentagonal\ArrayStore\StorageArray;
+use Pentagonal\Modular\Exceptions\ModuleNotFoundException;
 use Pentagonal\Modular\Exceptions\ModulePathException;
 use Pentagonal\Modular\Interfaces\ParseGetterInterface;
 use Pentagonal\Modular\Override\DirectoryIterator;
@@ -49,17 +51,12 @@ class Reader
     protected $parserGetter;
 
     /**
-     * @var FileTree[]
-     */
-    protected $invalidPaths;
-
-    /**
      * @var Parser[]
      */
     private $invalidModules;
 
     /**
-     * @var \closure[]|Module[]
+     * @var Module[]
      */
     private $validModules = [];
 
@@ -67,6 +64,16 @@ class Reader
      * @var bool
      */
     private $configured = false;
+
+    /**
+     * @var string[]|StorageArray
+     */
+    private $selectors;
+
+    /**
+     * @var FileTree[]|StorageArray
+     */
+    protected $invalidPaths;
 
     /**
      * Reader constructor.
@@ -103,7 +110,8 @@ class Reader
         $this->configured     = false;
         $this->validModules   = [];
         $this->invalidModules = [];
-        $this->invalidPaths   = [];
+        $this->invalidPaths   = new StorageArray();
+        $this->selectors      = new StorageArray();
     }
 
     /**
@@ -148,8 +156,9 @@ class Reader
         }
 
         $parser = $this->parserGetter->getParserInstance($directoryIterator);
+        $this->selectors[$parser->getSelector()] = $name;
         if ($parser->isValid()) {
-            $this->validModules[$name] =& $parser->getModuleInstance();
+            $this->validModules[$name] = $parser->getModuleInstance();
             return;
         }
 
@@ -165,6 +174,16 @@ class Reader
     }
 
     /**
+     * Get selector
+     *
+     * @return array
+     */
+    public function getSelectors() : array
+    {
+        return $this->selectors->toArray();
+    }
+
+    /**
      * Get Invalid Modules returning instance @uses Parser
      *
      * @return Parser[]
@@ -175,10 +194,61 @@ class Reader
     }
 
     /**
+     * Get lists valid modules
+     *
      * @return Module[]
      */
     public function getValidModules() : array
     {
         return $this->validModules;
+    }
+
+    /**
+     * Get Module By Name
+     *
+     * @param string $name
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function getModule(string $name) : Module
+    {
+        if (!isset($this->validModules[$name])) {
+            throw new ModuleNotFoundException(
+                sprintf(
+                    'Module %s is not exists',
+                    $name
+                ),
+                E_NOTICE,
+                $name
+            );
+        }
+
+        return $this->validModules[$name];
+    }
+
+    /**
+     * Get Module By Selector
+     *  Selector is persistent unique id
+     *
+     * @param string $selector
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function getModuleBySelector(string $selector) : Module
+    {
+        if (!isset($this->selectors[$selector])) {
+            throw new ModuleNotFoundException(
+                sprintf(
+                    'Module selector for %s is not exists',
+                    $selector
+                ),
+                E_NOTICE,
+                $selector
+            );
+        }
+
+        return $this->getModule($this->selectors[$selector]);
     }
 }

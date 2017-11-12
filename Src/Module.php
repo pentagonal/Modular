@@ -47,6 +47,20 @@ abstract class Module
     private $hasCallInit = false;
 
     /**
+     * Module name
+     *
+     * @var string
+     */
+    protected $name          = null;
+
+    /**
+     * Module Description
+     *
+     * @var string
+     */
+    protected $description   = '';
+
+    /**
      * Store constructor arguments
      *
      * @var StorageArray
@@ -62,7 +76,7 @@ abstract class Module
     /**
      * @var bool
      */
-    private $reserved_constructor_is_called = false;
+    private $reservedConstructorIsCalled = false;
 
     /**
      * Module constructor.
@@ -71,7 +85,7 @@ abstract class Module
      */
     final public function __construct(Parser $parser)
     {
-        if ($this->reserved_constructor_is_called) {
+        if ($this->reservedConstructorIsCalled) {
             throw new ModuleException(
                 sprintf(
                     '%s constructor only allow called once',
@@ -91,9 +105,9 @@ abstract class Module
             );
         }
 
-        $this->reserved_constructor_is_called = true;
-        $this->reservedConstructorParser      = $parser;
-        $args                                 = func_get_args();
+        $this->reservedConstructorIsCalled = true;
+        $this->reservedConstructorParser   = $parser;
+        $args                              = func_get_args();
         array_shift($args);
         $this->reservedConstructorArguments = new StorageArray($args);
         if (!is_string($this->name)) {
@@ -128,7 +142,7 @@ abstract class Module
      *
      * @return array
      */
-    final public function finalGetConstructorInfo() : array
+    final public function finalGetInfo() : array
     {
         return [
             self::KEY_NAME          => $this->name,
@@ -152,20 +166,6 @@ abstract class Module
 
         return $this;
     }
-
-    /**
-     * Module name
-     *
-     * @var string
-     */
-    protected $name          = null;
-
-    /**
-     * Module Description
-     *
-     * @var string
-     */
-    protected $description   = '';
 
     /**
      * Initialize Module

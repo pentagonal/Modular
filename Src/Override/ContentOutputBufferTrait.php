@@ -36,7 +36,7 @@ trait ContentOutputBufferTrait
      *
      * @return void because use printing data into stdout
      */
-    public function getContentsOutputBuffer()
+    public function getContentOutputBuffer()
     {
         if (!$this instanceof \SplFileInfo) {
             throw new \RuntimeException(
@@ -89,7 +89,7 @@ trait ContentOutputBufferTrait
         try {
             // using start buffer
             ob_start();
-            $this->getContentsOutputBuffer();
+            $this->getContentOutputBuffer();
             return ob_get_clean();
         } catch (\Throwable $e) {
             // clean if has buffer level higher than original

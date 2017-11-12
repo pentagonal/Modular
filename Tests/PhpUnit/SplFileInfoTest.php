@@ -84,7 +84,7 @@ class SplFileInfoTest extends TestCase
     {
         $spl = new SplFileInfo(__FILE__);
         ob_start();
-        $spl->getContentsOutputBuffer();
+        $spl->getContentOutputBuffer();
         $buffer = ob_get_clean();
         $this->assertEquals(
             $spl->getContents(),

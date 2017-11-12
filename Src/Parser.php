@@ -199,6 +199,7 @@ class Parser
 
     /**
      * Get Unique Module Selector
+     * this must be returning consistent hash
      *
      * @return string
      */
@@ -211,7 +212,7 @@ class Parser
      * @return Module
      * @throws \Throwable
      */
-    public function &getModuleInstance() : Module
+    public function getModuleInstance() : Module
     {
         if (! $this->parse()->isValid()) {
             throw $this->exception;
@@ -419,7 +420,7 @@ class Parser
                 }
 
                 $this->parentClass    = $reflection->getParentClass()->getName();
-                $this->moduleInstance =& $this->newConstruct();
+                $this->moduleInstance = $this->newConstruct();
                 self::$cachedLoadedClasses[$realPath] = [
                     $this->className,
                     $this->parentClass
@@ -729,6 +730,9 @@ class Parser
 
 
     /**
+     * Create selector
+     * The selector must be consistent unique string
+     *
      * @param \SplFileInfo $spl
      *
      * @return string
@@ -736,30 +740,28 @@ class Parser
     protected function createSelectorBySPL(\SplFileInfo $spl = null) : string
     {
         $spl = $spl?: $this;
-        return sha1($spl->getRealPath());
+        return sha1($spl->getBasename());
     }
 
     /**
+     * Create new construct module
+     *
      * @return Module
      * @throws \Throwable
      */
-    public function &newConstruct() : Module
+    public function newConstruct() : Module
     {
         if (!$this->className || ! is_subclass_of($this->className, Module::class)) {
-            throw ($this->exception?: new ModuleException(
-                sprintf(
-                    'Invalid module %s',
-                    $this->spl->getBasename()
+            throw ($this->exception?: new ModuleException(sprintf(
+                        'Invalid module %s',
+                        $this->spl->getBasename()
+                    )
                 )
-            )
             );
         }
 
-        /**
-         * @var Module $class
-         */
-        $class = new $this->className($this);
-        return $class;
+        $object = new $this->className($this);
+        return $object;
     }
 
     /**
