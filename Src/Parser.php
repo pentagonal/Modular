@@ -753,10 +753,9 @@ class Parser
     {
         if (!$this->className || ! is_subclass_of($this->className, Module::class)) {
             throw ($this->exception?: new ModuleException(sprintf(
-                        'Invalid module %s',
-                        $this->spl->getBasename()
-                    )
-                )
+                'Invalid module %s',
+                $this->spl->getBasename()
+            ))
             );
         }
 
