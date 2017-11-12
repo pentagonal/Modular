@@ -453,11 +453,12 @@ class Parser
      */
     protected function validateFileModule(SplFileInfo $spl) : bool
     {
-        $baseName                             = $spl->getBasename();
-        $fullPath                             = $spl->getRealPath();
-        $fileName                             = pathinfo($baseName, PATHINFO_FILENAME);
-        $pathName                             = pathinfo($spl->getPath(), PATHINFO_FILENAME);
-        $validClassName                       = [strtolower($fileName) => $fileName];
+        $baseName           = $spl->getBasename();
+        $fullPath           = $spl->getRealPath();
+        $fileName           = pathinfo($baseName, PATHINFO_FILENAME);
+        $pathName           = pathinfo($spl->getPath(), PATHINFO_FILENAME);
+        $validClassName     = [strtolower($fileName) => $fileName];
+        $modulePublicMethod = ['getInfo', 'initialize'];
 
         if (!preg_match(self::CLASS_NAME_REGEX, $fileName, $match) || empty($match[1])) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(
@@ -589,7 +590,7 @@ class Parser
         if (!isset($validClassName[strtolower($className)])) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(
                 sprintf(
-                    'base class of %1$s has not matching criteria. Class name must be one of : %2$s',
+                    'Base class of %1$s not matching criteria. Class name must be one of : %2$s',
                     $className,
                     implode(', ', $validClassName)
                 )
@@ -662,7 +663,7 @@ class Parser
 
         $reflectionExtends = new \ReflectionClass($parentClass);
         if (! $initialize || ! $getInfo) {
-            foreach (['getInfo', 'initialize'] as $method) {
+            foreach ($modulePublicMethod as $method) {
                 if (empty($$method)) {
                     continue;
                 }
@@ -692,7 +693,7 @@ class Parser
                 }
             }
         } else {
-            foreach (['getInfo', 'initialize'] as $method) {
+            foreach ($modulePublicMethod as $method) {
                 unset($matchParams);
                 preg_match("~{$method}\(\s*(.+)\s*\)~smix", $$method, $matchParams);
                 if (!empty($matchInitParams[1])) {
