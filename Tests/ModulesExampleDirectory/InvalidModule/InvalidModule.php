@@ -23,37 +23,11 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
-
-namespace Pentagonal\Modular\Test\PhpUnit\Override;
-
-use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\InvalidFileInfo;
-use PHPUnit\Framework\TestCase;
+namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
 /**
- * Class FileInfoTraitTest
- * @package Pentagonal\Modular\Test\PhpUnit\Override
+ * Class InvalidModule
  */
-class FileInfoTraitTest extends TestCase
+class InvalidModule
 {
-    public function testThrowable()
-    {
-        $invalidUseTrait = new InvalidFileInfo();
-        try {
-            $invalidUseTrait->getPathInfo();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
-        try {
-            $invalidUseTrait->getType();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
-    }
 }

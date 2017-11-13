@@ -131,7 +131,7 @@ class Parser
      * key value as full path and as className lower
      * @access internal
      */
-    protected static $cachedLoadedClasses = [];
+    private static $cachedLoadedClasses = [];
 
     /**
      * Parser constructor.
@@ -153,27 +153,29 @@ class Parser
     /**
      * Create instance of Parser
      *
-     * @param DirectoryIterator $di
+     * @param \SplFileInfo $di
      *
      * @final
      * @return Parser
      */
-    final public static function create(DirectoryIterator $di) : Parser
+    final public static function create(\SplFileInfo $di) : Parser
     {
         $object              = new static();
-        if (! $di->isDir() || $di->isDot()) {
+        if (! $di->isDir() || $di->getBasename() === '..') {
             throw new ModulePathException(
                 sprintf(
                     '%1$s is not a valid directory. Path type is %2$s',
                     $di->getPathname(),
-                    !$di->isDot() ? $di->getType() : 'Dot selector directory'
+                    $di->getBasename() !== '..'
+                        ? $di->getType()
+                        : 'Dot selector parent directory'
                 ),
                 E_NOTICE,
                 $di->getRealPath() ?: $di->getPathname()
             );
         }
 
-        $object->spl = $di->getFileInfo();
+        $object->spl = new SplFileInfo($di->getRealPath());
 
         return $object;
     }
@@ -249,7 +251,7 @@ class Parser
     /**
      * @return string|null
      */
-    public function getParentClass()
+    public function getModuleParentClass()
     {
         return $this->parse()->parentClass;
     }
@@ -298,12 +300,10 @@ class Parser
         // normalize
         $this->fileExtension = ltrim($this->fileExtension, '.');
         $this->hasParsed = true;
-
         $path = $this->getSpl()->getRealPath();
         $moduleBaseName = $this->getBaseName();
-
-        $baseFileName = $moduleBaseName . $this->fileExtension;
-        $indexed = $path . DIRECTORY_SEPARATOR . '.' . $baseFileName;
+        $baseFileName = $moduleBaseName . '.' . $this->fileExtension;
+        $indexed = $path . DIRECTORY_SEPARATOR . $baseFileName;
         $validBaseName = ($fileName = pathinfo($moduleBaseName, PATHINFO_FILENAME))
             // only allow valid class name file
             && preg_match(self::CLASS_NAME_REGEX, $fileName)
@@ -317,7 +317,7 @@ class Parser
         ) {
             if (!empty(self::$cachedLoadedClasses[$spl->getRealPath()])) {
                 $classes              = self::$cachedLoadedClasses[$spl->getRealPath()];
-                $this->className = array_shift($classes);
+                $this->className      = array_shift($classes);
                 $this->parentClass    = array_shift($classes);
                 $this->splFileIndexed = $spl;
             } elseif ($this->validateFileModule($spl)) {
@@ -333,7 +333,7 @@ class Parser
 
                 if (!empty(self::$cachedLoadedClasses[$iterator->getRealPath()])) {
                     $this->splFileIndexed = $iterator->getFileInfo(SplFileInfo::class);
-                    $this->className = self::$cachedLoadedClasses[$iterator->getRealPath()];
+                    $this->className = self::$cachedLoadedClasses[$iterator->getRealPath()][0];
                     break;
                 }
 
@@ -362,7 +362,7 @@ class Parser
             /**
              * @var SplFileInfo[] $toCheck
              */
-            if (! empty($toCheck)) {
+            if (!$this->splFileIndexed && ! empty($toCheck)) {
                 foreach ($toCheck as $key => $iterator) {
                     unset($toCheck[$key]);
                     if ($this->validateFileModule($iterator) === true) {
@@ -371,24 +371,25 @@ class Parser
                     }
                 }
             }
-
-            if (! $this->splFileIndexed) {
-                $this->exception = new ModuleNotFoundException(
-                    sprintf(
-                        'Module for %s has not found',
-                        $moduleBaseName
-                    ),
-                    E_NOTICE,
-                    $moduleBaseName
-                );
-
-                return $this;
-            }
         }
 
-        // load if has only loaded once
-        if (empty(self::$cachedLoadedClasses[$this->splFileIndexed->getRealPath()])) {
-            $level = ob_get_level();
+        if (! $this->splFileIndexed) {
+            $this->exception = new ModuleNotFoundException(
+                sprintf(
+                    'Module for %s has not found',
+                    $moduleBaseName
+                ),
+                E_NOTICE,
+                $moduleBaseName
+            );
+
+            return $this;
+        }
+
+        $level = ob_get_level();
+        // start buffer
+        ob_start();
+        try {
             // handle error
             set_error_handler(function ($code, $message) {
                 throw new ModuleException(
@@ -396,50 +397,47 @@ class Parser
                     $code
                 );
             });
-            // start buffer
-            ob_start();
-            try {
-                // call mutable bind to null, prevent override variable
-                $includeFile = (function ($file) {
-                    /** @noinspection PhpIncludeInspection */
-                    include_once $file;
-                })->bindTo(null);
-                $realPath = $this->splFileIndexed->getRealPath();
-                // by pass include
-                $includeFile($realPath);
 
-                $reflection           = new \ReflectionClass($this->getModuleClassName());
-                $this->className      = $reflection->getName();
-                if ($reflection->isAbstract()) {
-                    throw new ModuleException(
-                        sprintf(
-                            'Class %s is an abstract class',
-                            $this->className
-                        ),
-                        E_NOTICE
-                    );
-                }
+            // call mutable bind to null, prevent override variable
+            $includeFile = (function ($file) {
+                /** @noinspection PhpIncludeInspection */
+                include_once $file;
+            })->bindTo(null);
+            $realPath = $this->splFileIndexed->getRealPath();
+            // by pass include
+            $includeFile($realPath);
 
-                $this->parentClass    = $reflection->getParentClass()->getName();
-                $this->moduleInstance = $this->newConstruct();
-                self::$cachedLoadedClasses[$realPath] = [
-                    $this->className,
-                    $this->parentClass
-                ];
-            } catch (\Throwable $e) {
-                $this->splFileIndexed = null;
-                $this->className      = null;
-                $this->moduleInstance = null;
-                $this->parentClass    = null;
-                $this->exception      = $e;
+            $reflection           = new \ReflectionClass($this->className);
+            $this->className      = $reflection->getName();
+            if ($reflection->isAbstract()) {
+                throw new ModuleException(
+                    sprintf(
+                        'Class %s is an abstract class',
+                        $this->className
+                    ),
+                    E_NOTICE
+                );
             }
 
-            // restore error
-            restore_error_handler();
-            // clean buffer
-            while ($level < ob_get_level()) {
-                ob_end_clean();
-            }
+            $this->parentClass    = $reflection->getParentClass()->getName();
+            $this->moduleInstance = $this->newConstruct();
+            self::$cachedLoadedClasses[$realPath] = [
+                $this->className,
+                $this->parentClass
+            ];
+        } catch (\Throwable $e) {
+            $this->splFileIndexed = null;
+            $this->className      = null;
+            $this->moduleInstance = null;
+            $this->parentClass    = null;
+            $this->exception      = $e;
+        }
+
+        // restore error
+        restore_error_handler();
+        // clean buffer
+        while ($level < ob_get_level()) {
+            ob_end_clean();
         }
 
         return $this;
@@ -461,13 +459,13 @@ class Parser
         $validClassName     = [strtolower($fileName) => $fileName];
         $modulePublicMethod = ['getInfo', 'initialize'];
 
-        if (!preg_match(self::CLASS_NAME_REGEX, $fileName, $match) || empty($match[1])) {
+        /*if (!preg_match(self::CLASS_NAME_REGEX, $fileName, $match) || empty($match[1])) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(
                 sprintf('Module file name %s invalid context', $baseName)
             );
 
             return false;
-        }
+        }*/
 
         if (preg_match(self::CLASS_NAME_REGEX, $pathName)) {
             $validClassName[strtolower($pathName)] = $pathName;
@@ -499,9 +497,10 @@ class Parser
             '~
             namespace(
                     (?:
-                        \s+\\\?(?:[^;]+);   # named namespace
-                    )|\s*\{                 # empty namespace
+                        \s+\\\?(?:[^;\s]+);   # named namespace
+                    )|\s*\{                   # empty namespace
                 )
+                | use\s+(?:\\\?([^;]+);)   # use case
                 | \bclass\s+([_a-z](?:[a-z0-9_]+)?)
                 | extends\s+
                     (?:\\\)?                                # name space none
@@ -533,12 +532,13 @@ class Parser
          * Offset Selector
          */
         $offsetNameSpace    = 1;
-        $offsetClass        = 2;
-        $offsetExtends      = 3;
-        $offsetMethodFinal  = 4;
-        $offsetMethodInit   = 5;
-        $offsetMethodInfo   = 6;
-        $offsetMethodInfoParenthesis = 7;
+        $offsetUse          = 2;
+        $offsetClass        = 3;
+        $offsetExtends      = 4;
+        $offsetMethodFinal  = 5;
+        $offsetMethodInit   = 6;
+        $offsetMethodInfo   = 7;
+        $offsetMethodInfoParenthesis = 8;
 
         // Check for module class content
         if (empty($match[$offsetClass])        # class
@@ -559,6 +559,8 @@ class Parser
         // null is maybe does not have name space
         // or just create namespace { code... }
         $nameSpace = null;
+        $classFilters = array_filter($match[$offsetClass]);
+        $classPos = key($classFilters);
         if (!empty($match[$offsetNameSpace][0])) {
             $nameSpace = $match[$offsetNameSpace][0];
             if (trim($nameSpace) === '{') {
@@ -566,9 +568,6 @@ class Parser
             } else {
                 $nameSpace = trim(substr($nameSpace, 0, -1));
             }
-            $classPos = 1;
-        } else {
-            $classPos = 0;
         }
 
         // class name
@@ -581,7 +580,7 @@ class Parser
             || ! $parentClass # does not contains extends module
             # is contains name space but invalid
             || $nameSpace && ! preg_match(
-                '~^\\\?(?:[_a-zA-Z](?:[a-zA-Z0-9_]+)?)(?:(?:\\\[_a-zA-Z][a-zA-Z0-9_]+){1,})?$~',
+                '~^\\\?(?:[_a-zA-Z](?:[a-zA-Z0-9_]+)?)(?:(?:\\\[_a-zA-Z][a-zA-Z0-9_]+){1,})?\s*$~',
                 $nameSpace
             )
         ) {
@@ -610,6 +609,54 @@ class Parser
             return false;
         }
 
+        // if use context
+        if ($parentClass[0] !== '\\') {
+            foreach ($match[$offsetUse] as $key => $value) {
+                if (trim($value) === '') {
+                    continue;
+                }
+                $value         = ltrim($value, '\\');
+                $originalValue = $value;
+                $withoutAlias  = preg_replace('/\s+as\s+.+/', '', $originalValue);
+                if (stripos($value, ' as ')) {
+                    preg_match('/\s+as\s+(.+)\s*$$/', $value, $matchAlias);
+                    $value = $matchAlias[1];
+                }
+
+                $ex = explode('\\', $withoutAlias);
+                // use alias eg:
+                // use Namespace\Power\Module as PW;
+                // class Module extends PW {}
+                if (strpos($parentClass, '\\') === false) {
+                    if ($originalValue === $value || end($ex) === $value) {
+                        $parentClass = $withoutAlias;
+                        break;
+                    }
+                }
+
+                if ($originalValue === $value) {
+                    // eg :
+                    // use Namespace\Power as PW;
+                    // class module extends Pw\Module {}
+                    $quoted = preg_quote(end($ex) . '\\', '/');
+                    if (preg_match("/^{$quoted}$/", "\\{$parentClass}")) {
+                        $parentClass = "{$withoutAlias}\\{$parentClass}";
+                        break;
+                    }
+                }
+
+                // eg :
+                // use Namespace\Power as PW;
+                // class module extends Pw\Module {}
+                if ($originalValue !== $value && strpos($parentClass, $value) === 0
+                    || strpos($parentClass, end($ex)) === 0
+                ) {
+                    $parentClass = $withoutAlias . '\\' . $parentClass;
+                    break;
+                }
+            }
+        }
+
         $className = "{$nameSpace}\\{$className}";
         if (!$nameSpace) {
             $className = substr($className, 1);
@@ -633,14 +680,31 @@ class Parser
             return false;
         }
 
+        $evaluator = PhpContentEvaluator::create($spl);
+        if (!$evaluator->isValid()) {
+            $this->checkedFilesMessage[$fullPath] = $evaluator->getException();
+            return false;
+        }
+
         /**
          * Test if extendable Module object class
          */
         if (strtolower(Module::class) !== strtolower($parentClass)
-            && (class_exists($parentClass) || is_subclass_of($parentClass, Module::class))
+            && (class_exists($parentClass) && ! is_subclass_of($parentClass, Module::class))
         ) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(sprintf(
                 'Extends module for %1$s is not sub class of %2$s',
+                $className,
+                Module::class
+            ));
+
+            return false;
+        }
+        try {
+            $reflectionExtends = new \ReflectionClass($parentClass);
+        } catch (\Throwable $e) {
+            $this->checkedFilesMessage[$fullPath] = new ModuleException(sprintf(
+                'Class %1$s maybe does not extends %2$s',
                 $className,
                 Module::class
             ));
@@ -654,6 +718,7 @@ class Parser
         $getInfo       = array_shift($getInfo);
         $getInfoInner  = array_filter($match[$offsetMethodInfoParenthesis]);
         $getInfoInner  = array_shift($getInfoInner);
+
         if ($getInfo) {
             // append bracket
             $getInfoInner = "{{$getInfoInner}";
@@ -672,75 +737,69 @@ class Parser
             }
         }
 
-        $reflectionExtends = new \ReflectionClass($parentClass);
-        if (! $initialize || ! $getInfo) {
-            foreach ($modulePublicMethod as $method) {
-                if (empty($$method)) {
-                    continue;
-                }
-                try {
-                    $refMethod = $reflectionExtends->getMethod($method);
-                    if ($refMethod->isAbstract()) {
-                        throw new ModuleException(
-                            sprintf(
-                                '%1$s does not implement method %2$s()',
-                                $className,
-                                $method
-                            )
-                        );
-                    }
-                    if (!$refMethod->isPublic()) {
-                        throw new ModuleException(
-                            sprintf(
-                                '%1$s::%2$s() has invalid visibility',
-                                $className,
-                                $method
-                            )
-                        );
-                    }
-                } catch (\Throwable $e) {
-                    $this->checkedFilesMessage[$fullPath] = $e;
-                    return false;
-                }
+        foreach ($modulePublicMethod as $method) {
+            if (!empty($$method)) {
+                continue;
             }
-        } else {
-            foreach ($modulePublicMethod as $method) {
-                unset($matchParams);
-                preg_match("~{$method}\(\s*(.+)\s*\)~smix", $$method, $matchParams);
-                if (!empty($matchInitParams[1])) {
-                    preg_match_all(
-                        '~(\$[_a-z-A-Z]+)(?:\=((?:[^,]+)?))?~',
-                        preg_replace('~\s*\=\s*~', '=', $matchInitParams[1]),
-                        $matchParams
+            try {
+                $refMethod = $reflectionExtends->getMethod($method);
+                if ($refMethod->isAbstract()) {
+                    throw new ModuleException(
+                        sprintf(
+                            '%1$s does not implement method %2$s()',
+                            $className,
+                            $method
+                        )
                     );
-                    foreach ($matchParams[1] as $key => $value) {
-                        if (empty($matchParams[2][$key])) {
-                            $this->checkedFilesMessage[$fullPath] = new ModuleException(
-                                sprintf(
-                                    'Method %1$s::%2$s() contains required parameters.',
-                                    $className,
-                                    $method
-                                )
-                            );
-                            return false;
-                        }
-                    }
                 }
+                if (! $refMethod->isPublic()) {
+                    throw new ModuleException(
+                        sprintf(
+                            '%1$s::%2$s() has invalid visibility',
+                            $className,
+                            $method
+                        )
+                    );
+                }
+            } catch (\Throwable $e) {
+                $this->checkedFilesMessage[$fullPath] = $e;
+                return false;
             }
         }
 
-        $evaluator = PhpContentEvaluator::create($spl);
-        if (!$evaluator->isValid()) {
-            $this->checkedFilesMessage[$fullPath] = $evaluator->getException();
-            return false;
+        foreach ($modulePublicMethod as $method) {
+            if (empty($$method)) {
+                continue;
+            }
+            unset($matchParams);
+            preg_match("~{$method}\s*\(\s*(.+)\s*\)~smix", $$method, $matchParams);
+            if (!empty($matchParams[1])) {
+                preg_match_all(
+                    '~(\$[_a-z-A-Z]+)(?:\=((?:[^,]+)?))?~',
+                    preg_replace('~\s*\=\s*~', '=', $matchParams[1]),
+                    $matchParams
+                );
+                foreach ($matchParams[1] as $key => $value) {
+                    if (empty($matchParams[2][$key])) {
+                        $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                            sprintf(
+                                'Method %1$s::%2$s() contains required parameters.',
+                                $className,
+                                $method
+                            )
+                        );
+                        return false;
+                    }
+                }
+            }
         }
 
         // found
         $this->className   = $className;
         $this->parentClass = $reflectionExtends->getName();
+
         return true;
     }
-
 
     /**
      * Create selector

@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\PhpUnit\Override;
+namespace Pentagonal\Modular\Test\PhpUnit\Override;
 
 use Pentagonal\Modular\FileType;
 use Pentagonal\Modular\Override\SplFileInfo;
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Class SplFileInfoTest
- * @package Pentagonal\Modular\PhpUnit\Override
+ * @package Pentagonal\Modular\Test\PhpUnit\Override
  */
 class SplFileInfoTest extends TestCase
 {

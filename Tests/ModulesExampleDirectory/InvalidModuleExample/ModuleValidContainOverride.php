@@ -23,37 +23,41 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
+namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-namespace Pentagonal\Modular\Test\PhpUnit\Override;
-
-use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\InvalidFileInfo;
-use PHPUnit\Framework\TestCase;
+use Pentagonal\Modular\Module;
 
 /**
- * Class FileInfoTraitTest
- * @package Pentagonal\Modular\Test\PhpUnit\Override
+ * Class ModuleValidContainOverride
+ * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class FileInfoTraitTest extends TestCase
+class ModuleValidContainOverride extends Module
 {
-    public function testThrowable()
+
+    /**
+     * @inheritDoc
+     */
+    protected function initialize($args = null)
     {
-        $invalidUseTrait = new InvalidFileInfo();
-        try {
-            $invalidUseTrait->getPathInfo();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
-        try {
-            $invalidUseTrait->getType();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
+        // TODO: Implement initialize() method.
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getInfo(): array
+    {
+        return [];
+    }
+    /**
+     * Helper to call @uses Module::initialize() once
+     *
+     * @return Module
+     */
+    final public function finalInitOnce() : Module
+    {
+        $this->initialize();
+
+        return $this;
     }
 }

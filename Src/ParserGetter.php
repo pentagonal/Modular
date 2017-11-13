@@ -39,8 +39,8 @@ class ParserGetter implements ParseGetterInterface
     /**
      * {@inheritdoc}
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser
+    public function getParserInstance(\SplFileInfo $fileInfo) : Parser
     {
-        return Parser::create($directoryIterator);
+        return Parser::create($fileInfo);
     }
 }

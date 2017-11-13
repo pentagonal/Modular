@@ -25,35 +25,26 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\Test\PhpUnit\Override;
+namespace Pentagonal\Modular\Test\PhpUnit;
 
-use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\InvalidFileInfo;
+use Pentagonal\Modular\Parser;
+use Pentagonal\Modular\ParserGetter;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Class FileInfoTraitTest
- * @package Pentagonal\Modular\Test\PhpUnit\Override
+ * Class ParserGetterTest
+ * @package Pentagonal\Modular\Test\PhpUnit
  */
-class FileInfoTraitTest extends TestCase
+class ParserGetterTest extends TestCase
 {
-    public function testThrowable()
+    public function testInstance()
     {
-        $invalidUseTrait = new InvalidFileInfo();
-        try {
-            $invalidUseTrait->getPathInfo();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
-        try {
-            $invalidUseTrait->getType();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
+        $parserGetter = new ParserGetter();
+        $this->assertInstanceOf(
+            Parser::class,
+            $parserGetter->getParserInstance(
+                new \SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModule')
+            )
+        );
     }
 }

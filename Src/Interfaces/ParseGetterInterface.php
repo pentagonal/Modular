@@ -36,9 +36,10 @@ interface ParseGetterInterface
 {
     /**
      * Get @uses Parser instance
-     * @param DirectoryIterator $directoryIterator
+     *
+     * @param \SplFileInfo $fileInfo
      *
      * @return Parser
      */
-    public function getParserInstance(DirectoryIterator $directoryIterator) : Parser;
+    public function getParserInstance(\SplFileInfo $fileInfo) : Parser;
 }

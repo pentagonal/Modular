@@ -23,13 +23,13 @@
  * SOFTWARE.
  */
 
-namespace Pentagonal\Modular\PhpUnit\AbstractionAssets;
+namespace Pentagonal\Modular\Test\PhpUnit\AbstractionAssets;
 
 use Pentagonal\Modular\Override\FileInfoTrait;
 
 /**
  * Class InvalidFileInfo
- * @package Pentagonal\Modular\PhpUnit\AbstractionAssets
+ * @package Pentagonal\Modular\Test\PhpUnit\AbstractionAssets
  */
 class InvalidFileInfo
 {

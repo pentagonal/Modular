@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\PhpUnit;
+namespace Pentagonal\Modular\Test\PhpUnit;
 
 use Pentagonal\ArrayStore\StorageArray;
 use Pentagonal\Modular\FileTree;
@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Class FileTreeTest
- * @package Pentagonal\Modular\PhpUnit
+ * @package Pentagonal\Modular\Test\PhpUnit
  */
 class FileTreeTest extends TestCase
 {

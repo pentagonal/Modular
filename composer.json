@@ -23,7 +23,7 @@
     },
     "autoload-dev" : {
         "psr-4" : {
-            "Pentagonal\\Modular\\PhpUnit\\": "Tests/PhpUnit/"
+            "Pentagonal\\Modular\\Test\\PhpUnit\\": "Tests/PhpUnit/"
         },
         "classmap": [
             "Tests/PhpUnit/"

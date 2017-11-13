@@ -25,14 +25,14 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\PhpUnit\Override;
+namespace Pentagonal\Modular\Test\PhpUnit\Override;
 
-use Pentagonal\Modular\PhpUnit\AbstractionAssets\InvalidContentOutputBuffer;
+use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\InvalidContentOutputBuffer;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Class ContentOutputBufferTraitTest
- * @package Pentagonal\Modular\PhpUnit\Override
+ * @package Pentagonal\Modular\Test\PhpUnit\Override
  */
 class ContentOutputBufferTraitTest extends TestCase
 {

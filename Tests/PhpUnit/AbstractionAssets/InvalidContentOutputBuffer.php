@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-namespace Pentagonal\Modular\PhpUnit\AbstractionAssets;
+namespace Pentagonal\Modular\Test\PhpUnit\AbstractionAssets;
 
 use Pentagonal\Modular\Override\ContentOutputBufferTrait;
 

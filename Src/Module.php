@@ -44,7 +44,7 @@ abstract class Module
     /**
      * @var bool
      */
-    private $hasCallInit = false;
+    private $reservedHasCallInit = false;
 
     /**
      * Module name
@@ -157,11 +157,11 @@ abstract class Module
      */
     final public function finalInitOnce() : Module
     {
-        if ($this->hasCallInit) {
+        if ($this->reservedHasCallInit) {
             return $this;
         }
 
-        $this->hasCallInit = true;
+        $this->reservedHasCallInit = true;
         $this->initialize();
 
         return $this;

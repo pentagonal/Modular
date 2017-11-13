@@ -25,35 +25,23 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\Test\PhpUnit\Override;
+namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\InvalidFileInfo;
-use PHPUnit\Framework\TestCase;
+use Pentagonal\Modular\Module;
 
 /**
- * Class FileInfoTraitTest
- * @package Pentagonal\Modular\Test\PhpUnit\Override
+ * Class AModuleNotImplementParentGetInfo
+ * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class FileInfoTraitTest extends TestCase
+class AModuleGetInfoDoesNotHaveReturnValue extends Module
 {
-    public function testThrowable()
+    public function getInfo(): array
     {
-        $invalidUseTrait = new InvalidFileInfo();
-        try {
-            $invalidUseTrait->getPathInfo();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
-        try {
-            $invalidUseTrait->getType();
-        } catch (\Throwable $e) {
-            $this->assertInstanceOf(
-                \BadMethodCallException::class,
-                $e
-            );
-        }
+        // does not have return value
+    }
+
+    public function initialize()
+    {
+        // TODO: Implement initialize() method.
     }
 }
