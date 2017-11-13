@@ -619,7 +619,7 @@ class Parser
                 $originalValue = $value;
                 $withoutAlias  = preg_replace('/\s+as\s+.+/', '', $originalValue);
                 if (stripos($value, ' as ')) {
-                    preg_match('/\s+as\s+(.+)\s*$$/', $value, $matchAlias);
+                    preg_match('/\s+as\s+(.+)\s*$/', $value, $matchAlias);
                     $value = $matchAlias[1];
                 }
 
