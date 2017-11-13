@@ -39,5 +39,6 @@
     <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
     <!-- Path To Check -->
     <file>./Src</file>
-    <file>./Tests</file>
+    <file>./Tests/bootstrap.php</file>
+    <file>./Tests/PhpUnit</file>
 </ruleset>
