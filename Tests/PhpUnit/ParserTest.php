@@ -130,7 +130,10 @@ class ParserTest extends TestCase
             Parser::class,
             $parser->parse()
         );
-
+        if ($parser->getException() === null) {
+            print_r($parser->getModuleClassName());
+            exit();
+        }
         $this->assertInstanceOf(
             ModuleException::class,
             $parser->getException()
