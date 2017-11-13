@@ -21,6 +21,14 @@
         "phpunit/phpunit": "^6",
         "satooshi/php-coveralls": "^1"
     },
+    "autoload-dev" : {
+        "psr-4" : {
+            "Pentagonal\\Modular\\PhpUnit\\": "Tests/PhpUnit/"
+        },
+        "classmap": [
+            "Tests/PhpUnit/"
+        ]
+    },
     "autoload" : {
         "psr-4" : {
             "Pentagonal\\Modular\\": "Src/"

@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace Pentagonal\Modular\PhpUnit;
+namespace Pentagonal\Modular\PhpUnit\Override;
 
 use Pentagonal\Modular\FileType;
 use Pentagonal\Modular\Override\SplFileInfo;
@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Class SplFileInfoTest
- * @package Pentagonal\Modular\PhpUnit
+ * @package Pentagonal\Modular\PhpUnit\Override
  */
 class SplFileInfoTest extends TestCase
 {
@@ -114,7 +114,7 @@ class SplFileInfoTest extends TestCase
             );
         }
 
-        $file = __DIR__ .'/Assets/TestForUnReadableFile.file';
+        $file = __DIR__ .'/../Assets/TestForUnReadableFile.file';
         $originalPermission = fileperms($file);
 
         // change permission to don't allow to read

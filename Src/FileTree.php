@@ -87,7 +87,7 @@ final class FileTree implements \ArrayAccess
      */
     private function readRecursive(\SplFileInfo $spl)
     {
-        if (! $spl->getType() !== FileType::TYPE_DIR) {
+        if ($spl->getType() !== FileType::TYPE_DIR) {
             return $spl->getFileInfo(SplFileInfo::class);
         }
 
@@ -112,6 +112,7 @@ final class FileTree implements \ArrayAccess
         if ($this->storage) {
             return $this->storage;
         }
+
         $this->storage = new StorageArray([
             $this->getBasename() => $this->readRecursive($this->spl)
         ]);
@@ -120,7 +121,7 @@ final class FileTree implements \ArrayAccess
     }
 
     /**
-     * @return FileTree[]|FileTree
+     * @return FileTree[]|FileTree|StorageArray
      */
     public function get()
     {
@@ -143,7 +144,7 @@ final class FileTree implements \ArrayAccess
      */
     public function offsetExists($offset)
     {
-        return $this->storage->offsetExists($offset);
+        return $this->get()->offsetExists($offset);
     }
 
     /**
@@ -151,7 +152,7 @@ final class FileTree implements \ArrayAccess
      */
     public function offsetGet($offset)
     {
-        return $this->storage->offsetGet($offset);
+        return $this->get()->offsetGet($offset);
     }
 
     /**
@@ -159,7 +160,8 @@ final class FileTree implements \ArrayAccess
      */
     public function offsetSet($offset, $value)
     {
-        $this->storage->offsetSet($offset, $value);
+        // passed
+        // $this->get()->offsetSet($offset, $value);
     }
 
     /**
@@ -167,7 +169,8 @@ final class FileTree implements \ArrayAccess
      */
     public function offsetUnset($offset)
     {
-        $this->storage->offsetUnset($offset);
+        // passed
+        // $this->get()->offsetUnset($offset);
     }
 
     public function __toString()

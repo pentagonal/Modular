@@ -118,11 +118,9 @@ trait FileInfoTrait
      */
     public function isDot()
     {
-        if (is_callable('parent::isDot')) {
-            return parent::isDot();
-        }
-        $name = $this->getBasename();
-        return $name === '.' || $name === '..';
+        return is_callable('parent::isDot')
+            ? parent::isDot()
+            : (($name = $this->getBasename()) && $name === '.' || $name === '..');
     }
 
     /**
@@ -132,9 +130,6 @@ trait FileInfoTrait
      */
     public function exist()
     {
-        if (is_callable('parent::exist')) {
-            return parent::exist();
-        }
-        return is_string($this->getRealPath());
+        return is_callable('parent::exist') ? parent::exist() : is_string($this->getRealPath());
     }
 }
