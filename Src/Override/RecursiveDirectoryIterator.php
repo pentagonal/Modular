@@ -42,6 +42,6 @@ class RecursiveDirectoryIterator extends \RecursiveDirectoryIterator
     public function current() : \SplFileInfo
     {
         $current = parent::current();
-        return get_class($current) !== 'SplFileInfo' ? $current : new SplFileInfo($current->getPathName());
+        return get_class($current) !== \SplFileInfo::class ? $current : new SplFileInfo($current->getPathName());
     }
 }
