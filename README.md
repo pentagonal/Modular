@@ -2,6 +2,10 @@
 
 Easy php module storage collector for small project
 
+[![Build Status](https://travis-ci.org/pentagonal/Modular.svg?branch=master)](https://travis-ci.org/pentagonal/Modular?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/pentagonal/Modular/badge.svg?branch=master)](https://coveralls.io/github/pentagonal/Modular?branch=master)
+
+
 ```
 Embed the script without change the core.
 just like as add-ons, plugins or whatever it names.

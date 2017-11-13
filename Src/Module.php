@@ -35,6 +35,8 @@ use Pentagonal\Modular\Exceptions\ModuleException;
  * @package Pentagonal\Modular
  *
  * base Module abstraction layer to implement as self Module
+ *
+ * @uses Module::finalInitOnce() to full load the modules
  */
 abstract class Module
 {

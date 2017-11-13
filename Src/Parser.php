@@ -817,6 +817,7 @@ class Parser
 
     /**
      * Create new construct module
+     *      call @uses Module::finalInitOnce(); to initialize the module
      *
      * @return Module
      * @throws \Throwable
