@@ -141,10 +141,13 @@ class Reader
 
     /**
      * Reconfigure
+     * This reconfigure can override and determine what directories
+     * that matching criteria.
+     * eg. That file name must be match with directory name
      *
      * @param DirectoryIterator $directoryIterator
      */
-    private function reConfigureModule(
+    protected function reConfigureModule(
         DirectoryIterator $directoryIterator
     ) {
         $name = $directoryIterator->getBasename();
