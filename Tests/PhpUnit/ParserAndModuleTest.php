@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular\Test\PhpUnit;
 
-use Pentagonal\ArrayStore\StorageArrayObject;
+use Pentagonal\ArrayStore\StorageArray;
 use Pentagonal\Modular\Exceptions\ModuleException;
 use Pentagonal\Modular\Exceptions\ModuleNotFoundException;
 use Pentagonal\Modular\Exceptions\ModulePathException;
@@ -115,7 +115,7 @@ class ParserAndModuleTest extends TestCase
             $parser->getModuleParentClass()
         );
         $this->assertInstanceOf(
-            StorageArrayObject::class,
+            StorageArray::class,
             $parser->getCheckedFilesMessage()
         );
         $this->assertEmpty(

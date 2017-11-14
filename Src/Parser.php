@@ -27,8 +27,7 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular;
 
-use Pentagonal\ArrayStore\StorageArrayObject as StorageArray;
-use Pentagonal\ArrayStore\StorageArrayObject;
+use Pentagonal\ArrayStore\StorageArray;
 use Pentagonal\Modular\Exceptions\ModuleException;
 use Pentagonal\Modular\Exceptions\ModuleNotFoundException;
 use Pentagonal\Modular\Exceptions\ModulePathException;
@@ -870,7 +869,7 @@ class Parser
      */
     public function clearMessage()
     {
-        $this->checkedFilesMessage = new StorageArrayObject();
+        $this->checkedFilesMessage = new StorageArray();
     }
 
     /**
