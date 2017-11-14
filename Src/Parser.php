@@ -457,7 +457,7 @@ class Parser
         $fileName           = pathinfo($baseName, PATHINFO_FILENAME);
         $pathName           = pathinfo($spl->getPath(), PATHINFO_FILENAME);
         $validClassName     = [strtolower($fileName) => $fileName];
-        $modulePublicMethod = ['getInfo', 'initialize'];
+        $moduleBaseMethod   = ['getInfo', 'initialize'];
 
         /*if (!preg_match(self::CLASS_NAME_REGEX, $fileName, $match) || empty($match[1])) {
             $this->checkedFilesMessage[$fullPath] = new ModuleException(
@@ -518,8 +518,14 @@ class Parser
                     | finalGetInfo
                     | finalInitOnce
                 )\s*\(
-                | function\s+(initialize\s*\((?:[^\)]+)?\))           # base method initialize()
-                | function\s+(getInfo\s*\((?:[^\)]+)?\))\s*\:\s*array # base method getInfo()
+                | (
+                    (?:(?:public|private|protected)\s+)?
+                    function\s+initialize\s*\((?:[^\)]+)?\)
+                )  # base method initialize()
+                | (
+                    (?:(?:public|private|protected)\s+)?
+                    function\s+getInfo\s*\((?:[^\)]+)?\)
+                )\s*\:\s*array # base method getInfo()
                 \s*\{(.*?)\}
              ~mixs',
             // strip the white space
@@ -686,20 +692,30 @@ class Parser
             return false;
         }
 
-        /**
-         * Test if extendable Module object class
-         */
-        if (strtolower(Module::class) !== strtolower($parentClass)
-            && (class_exists($parentClass) && ! is_subclass_of($parentClass, Module::class))
-        ) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(sprintf(
-                'Extends module for %1$s is not sub class of %2$s',
-                $className,
-                Module::class
-            ));
-
+        try {
+            /**
+             * Test if extendable Module object class
+             */
+            if (strtolower(Module::class) !== strtolower($parentClass)
+                // this maybe thrown fatal error
+                // and unhandled exception
+                && (class_exists($parentClass) && ! is_subclass_of($parentClass, Module::class))
+            ) {
+                throw new ModuleException(sprintf(
+                    'Extends module for %1$s is not sub class of %2$s',
+                    $className,
+                    Module::class
+                ));
+            }
+        } catch (\Throwable $e) {
+            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                $e->getMessage(),
+                $e->getCode(),
+                $e
+            );
             return false;
         }
+
         try {
             $reflectionExtends = new \ReflectionClass($parentClass);
         } catch (\Throwable $e) {
@@ -737,10 +753,50 @@ class Parser
             }
         }
 
-        foreach ($modulePublicMethod as $method) {
+        foreach ($moduleBaseMethod as $method) {
             if (!empty($$method)) {
+                try {
+                    $visibility = $method == 'getInfo' ? 'protected|private' : 'private';
+                    if (preg_match("/^\s*($visibility)\s+function/i", $$method)) {
+                        throw new ModuleException(
+                            sprintf(
+                                '%1$s::%2$s() has invalid visibility',
+                                $className,
+                                $method
+                            )
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    $this->checkedFilesMessage[$fullPath] = $e;
+                    return false;
+                }
+
+                unset($matchParams);
+                preg_match("~{$method}\s*\(\s*(.+)\s*\)~smix", $$method, $matchParams);
+                if (!empty($matchParams[1])) {
+                    preg_match_all(
+                        '~(\$[_a-z-A-Z]+)(?:\=((?:[^,]+)?))?~',
+                        preg_replace('~\s*\=\s*~', '=', $matchParams[1]),
+                        $matchParams
+                    );
+
+                    foreach ($matchParams[1] as $key => $value) {
+                        if (empty($matchParams[2][$key])) {
+                            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                                sprintf(
+                                    'Method %1$s::%2$s() contains required parameters.',
+                                    $className,
+                                    $method
+                                )
+                            );
+
+                            return false;
+                        }
+                    }
+                }
                 continue;
             }
+
             try {
                 $refMethod = $reflectionExtends->getMethod($method);
                 if ($refMethod->isAbstract()) {
@@ -752,7 +808,10 @@ class Parser
                         )
                     );
                 }
-                if (! $refMethod->isPublic()) {
+                /*
+                if ($method === 'getInfo' && ! $refMethod->isPublic()
+                    || $method === 'initialize' && $refMethod->isPrivate()
+                ) {
                     throw new ModuleException(
                         sprintf(
                             '%1$s::%2$s() has invalid visibility',
@@ -760,37 +819,10 @@ class Parser
                             $method
                         )
                     );
-                }
+                }*/
             } catch (\Throwable $e) {
                 $this->checkedFilesMessage[$fullPath] = $e;
                 return false;
-            }
-        }
-
-        foreach ($modulePublicMethod as $method) {
-            if (empty($$method)) {
-                continue;
-            }
-            unset($matchParams);
-            preg_match("~{$method}\s*\(\s*(.+)\s*\)~smix", $$method, $matchParams);
-            if (!empty($matchParams[1])) {
-                preg_match_all(
-                    '~(\$[_a-z-A-Z]+)(?:\=((?:[^,]+)?))?~',
-                    preg_replace('~\s*\=\s*~', '=', $matchParams[1]),
-                    $matchParams
-                );
-                foreach ($matchParams[1] as $key => $value) {
-                    if (empty($matchParams[2][$key])) {
-                        $this->checkedFilesMessage[$fullPath] = new ModuleException(
-                            sprintf(
-                                'Method %1$s::%2$s() contains required parameters.',
-                                $className,
-                                $method
-                            )
-                        );
-                        return false;
-                    }
-                }
             }
         }
 
@@ -825,11 +857,7 @@ class Parser
     public function newConstruct() : Module
     {
         if (!$this->className || ! is_subclass_of($this->className, Module::class)) {
-            throw ($this->exception?: new ModuleException(sprintf(
-                'Invalid module %s',
-                $this->spl->getBasename()
-            ))
-            );
+            throw ($this->exception?: new ModuleException(sprintf('Invalid module %s', $this->spl->getBasename())));
         }
 
         $object = new $this->className($this);

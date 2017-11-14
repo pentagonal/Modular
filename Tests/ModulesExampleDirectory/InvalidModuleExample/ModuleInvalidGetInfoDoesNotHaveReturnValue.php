@@ -23,30 +23,25 @@
  * SOFTWARE.
  */
 
+declare(strict_types=1);
+
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Override\SplFileInfo;
+use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleInvalidClassExtends
+ * Class ModuleInvalidGetInfoDoesNotHaveReturnValue
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleInvalidClassExtends extends SplFileInfo
+class ModuleInvalidGetInfoDoesNotHaveReturnValue extends Module
 {
-
-    /**
-     * @inheritDoc
-     */
-    protected function initialize($args = null)
-    {
-        // TODO: Implement initialize() method.
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function getInfo(): array
     {
-        return [];
+        // does not have return value
+    }
+
+    public function initialize()
+    {
+        // TODO: Implement initialize() method.
     }
 }

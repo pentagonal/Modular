@@ -27,21 +27,14 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Module;
-
 /**
- * Class AModuleNotImplementParentGetInfo
+ * Class ModuleInvalidNotExtendsModule
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class AModuleGetInfoDoesNotHaveReturnValue extends Module
+class ModuleInvalidNotExtendsModule extends \SplFileInfo
 {
-    public function getInfo(): array
+    public function getInfo() : array
     {
-        // does not have return value
-    }
-
-    public function initialize()
-    {
-        // TODO: Implement initialize() method.
+        return [];
     }
 }

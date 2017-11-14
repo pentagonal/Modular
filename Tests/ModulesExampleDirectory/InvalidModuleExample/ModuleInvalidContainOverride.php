@@ -25,15 +25,14 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Override\SplFileInfo;
+use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleInvalidClassExtends
+ * Class ModuleInvalidContainOverride
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleInvalidClassExtends extends SplFileInfo
+class ModuleInvalidContainOverride extends Module
 {
-
     /**
      * @inheritDoc
      */
@@ -48,5 +47,16 @@ class ModuleInvalidClassExtends extends SplFileInfo
     public function getInfo(): array
     {
         return [];
+    }
+    /**
+     * Helper to call @uses Module::initialize() once
+     *
+     * @return Module
+     */
+    final public function finalInitOnce() : Module
+    {
+        $this->initialize();
+
+        return $this;
     }
 }

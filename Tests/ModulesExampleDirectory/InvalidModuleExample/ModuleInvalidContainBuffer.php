@@ -25,13 +25,13 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Override\SplFileInfo;
+use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleInvalidClassExtends
+ * Class ModuleInvalidContainBuffer
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleInvalidClassExtends extends SplFileInfo
+class ModuleInvalidContainBuffer extends Module
 {
 
     /**
@@ -50,3 +50,5 @@ class ModuleInvalidClassExtends extends SplFileInfo
         return [];
     }
 }
+?>
+contains buffers

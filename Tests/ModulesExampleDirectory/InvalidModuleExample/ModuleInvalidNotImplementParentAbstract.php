@@ -6,9 +6,9 @@ namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 use Pentagonal\Modular\Module;
 
 /**
- * Class AModuleNotImplementParentGetInfo
+ * Class ModuleInvalidNotImplementParentAbstract
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class AModuleNotImplementParentGetInfo extends Module
+class ModuleInvalidNotImplementParentAbstract extends Module
 {
 }

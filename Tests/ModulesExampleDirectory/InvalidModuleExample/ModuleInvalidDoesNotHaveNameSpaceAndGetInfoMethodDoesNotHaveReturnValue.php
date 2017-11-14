@@ -4,9 +4,9 @@ namespace {
     use Pentagonal\Modular\Module;
 
     /**
-     * Class ABracketNamespaceTest
+     * Class ModuleInvalidDoesNotHaveNameSpaceAndGetInfoMethodDoesNotHaveReturnValue
      */
-    class ABracketNamespaceTest extends Module
+    class ModuleInvalidDoesNotHaveNameSpaceAndGetInfoMethodDoesNotHaveReturnValue extends Module
     {
         public function getInfo(): array
         {

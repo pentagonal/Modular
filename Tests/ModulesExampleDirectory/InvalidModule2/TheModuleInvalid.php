@@ -25,30 +25,35 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Module;
+use
+    /** @noinspection PhpUndefinedClassInspection */
+    Pentagonal\Modular\Modules as M;
+
+/** @noinspection PhpUndefinedClassInspection */
 
 /**
- * Class ModuleValidContainOverride
+ * Class ModuleValid2
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValidContainInvalid extends Module
+class TheModuleInvalid extends M
 {
+    /**
+     * @var array
+     */
+    protected $recordArgs = [];
 
     /**
      * @inheritDoc
      */
     protected function initialize($args = null)
     {
-        // TODO: Implement initialize() method.
     }
 
     /**
      * @inheritDoc
      */
-    public function getInfo(): array
+    protected function getInfo(): array
     {
         return [];
     }
 }
-?>
-contains buffers

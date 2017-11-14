@@ -25,39 +25,12 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Module;
+use Pentagonal\Modular\Test\PhpUnit\AbstractionAssets\ModuleExtendsGetInfoIsPrivate;
 
 /**
- * Class ModuleValidContainOverride
+ * Class InvalidModuleExtendsGetInfoIsPrivate
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValidContainOverride extends Module
+class InvalidModuleExtendsGetInfoIsPrivate extends ModuleExtendsGetInfoIsPrivate
 {
-
-    /**
-     * @inheritDoc
-     */
-    protected function initialize($args = null)
-    {
-        // TODO: Implement initialize() method.
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getInfo(): array
-    {
-        return [];
-    }
-    /**
-     * Helper to call @uses Module::initialize() once
-     *
-     * @return Module
-     */
-    final public function finalInitOnce() : Module
-    {
-        $this->initialize();
-
-        return $this;
-    }
 }

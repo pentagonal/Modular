@@ -35,13 +35,14 @@ use Pentagonal\Modular\Module;
 use Pentagonal\Modular\Override\DirectoryIterator;
 use Pentagonal\Modular\Override\SplFileInfo;
 use Pentagonal\Modular\Parser;
+use Pentagonal\Modular\Test\ModuleExampleDirectory\ModuleValid;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Class ParserTest
+ * Class ParserAndModuleTest
  * @package Pentagonal\Modular\Test\PhpUnit
  */
-class ParserTest extends TestCase
+class ParserAndModuleTest extends TestCase
 {
     public function testInstanceException()
     {
@@ -144,7 +145,29 @@ class ParserTest extends TestCase
         $this->assertEmpty(
             $parser->getCheckedFilesMessage()->toArray()
         );
+
+        try {
+            $parser->newConstruct();
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                ModuleException::class,
+                $e
+            );
+        }
+
+        $diInvalid = new SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/InvalidModule2');
+        $parser = Parser::create($diInvalid);
+        $parser->parse();
+        try {
+            $parser->newConstruct();
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                ModuleException::class,
+                $e
+            );
+        }
     }
+
     public function testValidModule()
     {
         $diValid = new SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModule');
@@ -199,5 +222,28 @@ class ParserTest extends TestCase
             $module->getDescription()
         );
         $module->finalInitOnce();
+        try {
+            $module->__construct($parser);
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                \RuntimeException::class,
+                $e
+            );
+        }
+    }
+
+    public function testInvalidSplInstanceParserModule()
+    {
+        $diInvalid = new SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/InvalidModuleExample');
+        require_once __DIR__ .'/../ModulesExampleDirectory/ValidModule/ModuleValid.php';
+        $parser = Parser::create($diInvalid);
+        try {
+            new ModuleValid($parser);
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                \InvalidArgumentException::class,
+                $e
+            );
+        }
     }
 }

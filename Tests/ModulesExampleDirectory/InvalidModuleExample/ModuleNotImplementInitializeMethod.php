@@ -23,17 +23,10 @@
  * SOFTWARE.
  */
 
-declare(strict_types=1);
 
-namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
-
-/**
- * Class AModuleIsNotImplementedModule
- * @package Pentagonal\Modular\Test\ModuleExampleDirectory
- */
-class AModuleIsNotImplementedModule extends \SplFileInfo
+class ModuleNotImplementInitializeMethod extends \Pentagonal\Modular\Module
 {
-    public function getInfo() : array
+    public function getInfo(): array
     {
         return [];
     }

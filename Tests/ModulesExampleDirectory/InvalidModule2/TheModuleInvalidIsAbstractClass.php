@@ -25,21 +25,24 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Override\SplFileInfo;
+use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleInvalidClassExtends
+ * Class ModuleValid2
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleInvalidClassExtends extends SplFileInfo
+abstract class TheModuleInvalidIsAbstractClass extends Module
 {
+    /**
+     * @var array
+     */
+    protected $recordArgs = [];
 
     /**
      * @inheritDoc
      */
     protected function initialize($args = null)
     {
-        // TODO: Implement initialize() method.
     }
 
     /**

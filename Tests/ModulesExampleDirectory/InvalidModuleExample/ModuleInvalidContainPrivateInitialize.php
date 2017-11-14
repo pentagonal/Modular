@@ -25,19 +25,19 @@
 
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Override\SplFileInfo;
+use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleInvalidClassExtends
+ * Class ModuleInvalidContainPrivateInitialize
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleInvalidClassExtends extends SplFileInfo
+class ModuleInvalidContainPrivateInitialize extends Module
 {
 
     /**
      * @inheritDoc
      */
-    protected function initialize($args = null)
+    private function initialize($args = null)
     {
         // TODO: Implement initialize() method.
     }

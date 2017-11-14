@@ -76,6 +76,7 @@ final class PhpContentEvaluator
                 )
             );
         }
+
         /**
          * @var SplFileInfo|string $splOrString
          */
@@ -119,11 +120,9 @@ final class PhpContentEvaluator
                 $this->file
             );
             $this->status = self::OK;
-        } catch (BadSyntaxExceptions $e) {
-            $this->errorExceptions = $e;
-            $this->status = $e->getCode();
         } catch (\Throwable $e) {
-            $this->status = self::E_ERROR;
+            $this->errorExceptions = $e;
+            $this->status = $e instanceof BadSyntaxExceptions ? $e->getCode() : self::E_ERROR;
             $this->errorExceptions = $e;
             return $this;
         }

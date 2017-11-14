@@ -213,7 +213,7 @@ class Reader
      */
     public function getModule(string $name) : Module
     {
-        if (!isset($this->validModules[$name])) {
+        if (!isset($this->configure()->validModules[$name])) {
             throw new ModuleNotFoundException(
                 sprintf(
                     'Module %s is not exists',
@@ -238,7 +238,7 @@ class Reader
      */
     public function getModuleBySelector(string $selector) : Module
     {
-        if (!isset($this->selectors[$selector])) {
+        if (!isset($this->configure()->selectors[$selector])) {
             throw new ModuleNotFoundException(
                 sprintf(
                     'Module selector for %s is not exists',

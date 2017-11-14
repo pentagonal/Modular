@@ -23,9 +23,28 @@
  * SOFTWARE.
  */
 
+namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-class AModuleDoesNotHaveNameSpace extends \Pentagonal\Modular\Module
+use Pentagonal\Modular\Module;
+
+/**
+ * Class ModuleInvalidContainRequiredArgument
+ * @package Pentagonal\Modular\Test\ModuleExampleDirectory
+ */
+class ModuleInvalidContainRequiredArgument extends Module
 {
+
+    /**
+     * @inheritDoc
+     */
+    public function initialize($args)
+    {
+        // TODO: Implement initialize() method.
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function getInfo(): array
     {
         return [];

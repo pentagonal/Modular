@@ -40,7 +40,9 @@ use Pentagonal\Modular\Exceptions\ModuleException;
  */
 abstract class Module
 {
-    const KEY_NAME = 'name';
+    const KEY_NAME        = 'name';
+    const KEY_FILE        = 'file';
+    const KEY_SELECTOR    = 'selector';
     const KEY_DESCRIPTION = 'description';
 
     /**
@@ -60,7 +62,7 @@ abstract class Module
      *
      * @var string
      */
-    protected $description   = '';
+    protected $description   = null;
 
     /**
      * Store constructor arguments
@@ -81,14 +83,21 @@ abstract class Module
     private $reservedConstructorIsCalled = false;
 
     /**
+     * @var array
+     */
+    private $reservedBaseInfo = [];
+
+    /**
      * Module constructor.
      *
      * @param Parser $parser the module selector
+     * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      */
     final public function __construct(Parser $parser)
     {
         if ($this->reservedConstructorIsCalled) {
-            throw new ModuleException(
+            throw new \RuntimeException(
                 sprintf(
                     '%s constructor only allow called once',
                     get_class($this)
@@ -97,7 +106,8 @@ abstract class Module
         }
 
         $reflection = new \ReflectionClass($this);
-        if ($parser->getSplFileIndexed()->getRealPath() !== $reflection->getFileName()) {
+        $fileIndexed = $parser->getSplFileIndexed();
+        if (!$fileIndexed || $fileIndexed->getRealPath() !== $reflection->getFileName()) {
             throw new \InvalidArgumentException(
                 sprintf(
                     'object %s must be pointing to class %s file',
@@ -115,9 +125,17 @@ abstract class Module
         if (!is_string($this->name)) {
             $this->name = $parser->getBasename();
         }
+
         if (!is_string($this->description)) {
             $this->description = '';
         }
+
+        $this->reservedBaseInfo = [
+            self::KEY_FILE          => $parser->getRealPath(),
+            self::KEY_SELECTOR      => $parser->getSelector(),
+            self::KEY_NAME          => $this->name,
+            self::KEY_DESCRIPTION   => $this->description
+        ];
     }
 
     /**
@@ -141,15 +159,13 @@ abstract class Module
 
     /**
      * Get Base Info
+     * the value can be overide via
      *
      * @return array
      */
     final public function finalGetInfo() : array
     {
-        return [
-            self::KEY_NAME          => $this->name,
-            self::KEY_DESCRIPTION   => $this->description
-        ];
+        return $this->reservedBaseInfo;
     }
 
     /**
