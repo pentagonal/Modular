@@ -196,7 +196,7 @@ class Reader
     /**
      * Get lists valid modules
      *
-     * @return Module[]
+     * @return Module[]     array key as identifier
      */
     public function getValidModules() : array
     {
@@ -206,25 +206,25 @@ class Reader
     /**
      * Get Module By Name
      *
-     * @param string $name
+     * @param string $identifier
      *
      * @return Module
      * @throws ModuleNotFoundException
      */
-    public function getModule(string $name) : Module
+    public function getModule(string $identifier) : Module
     {
-        if (!isset($this->configure()->validModules[$name])) {
+        if (!isset($this->configure()->validModules[$identifier])) {
             throw new ModuleNotFoundException(
                 sprintf(
                     'Module %s is not exists',
-                    $name
+                    $identifier
                 ),
                 E_NOTICE,
-                $name
+                $identifier
             );
         }
 
-        return $this->validModules[$name];
+        return $this->validModules[$identifier];
     }
 
     /**
