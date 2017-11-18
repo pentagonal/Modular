@@ -208,10 +208,15 @@ class ParserAndModuleTest extends TestCase
             $name
         );
         $this->assertEmpty($description);
-
+        $this->assertFalse(
+            $module->isHasInit()
+        );
         $this->assertInstanceOf(
             Module::class,
             $module->finalInitOnce()
+        );
+        $this->assertTrue(
+            $module->isHasInit()
         );
         $this->assertNotEquals(
             $name,

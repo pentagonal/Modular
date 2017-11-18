@@ -186,6 +186,14 @@ abstract class Module
     }
 
     /**
+     * @return bool
+     */
+    final public function isHasInit() : bool
+    {
+        return $this->reservedHasCallInit;
+    }
+
+    /**
      * Initialize Module
      * Better to add has init to prevent multiple call init
      *

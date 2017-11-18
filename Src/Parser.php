@@ -516,6 +516,7 @@ class Parser
                     # public
                     | finalGetInfo
                     | finalInitOnce
+                    | isHasInit
                 )\s*\(
                 | (
                     (?:(?:public|private|protected)\s+)?
