@@ -617,15 +617,18 @@ class Parser
 
         // if use context
         if ($parentClass[0] !== '\\') {
+            $quoted = preg_quote($parentClass, '/');
             foreach ($match[$offsetUse] as $key => $value) {
                 if (trim($value) === '') {
                     continue;
                 }
+                $hasAlias = false;
                 $value         = ltrim($value, '\\');
                 $originalValue = $value;
                 $withoutAlias  = preg_replace('/\s+as\s+.+/', '', $originalValue);
                 if (stripos($value, ' as ')) {
                     preg_match('/\s+as\s+(.+)\s*$/', $value, $matchAlias);
+                    $hasAlias = true;
                     $value = $matchAlias[1];
                 }
 
@@ -634,9 +637,10 @@ class Parser
                 // use Namespace\Power\Module as PW;
                 // class Module extends PW {}
                 if (strpos($parentClass, '\\') === false) {
-                    if ($originalValue === $value || end($ex) === $value) {
+                    if ($hasAlias && $parentClass === $value
+                        || ! $hasAlias && end($ex) === $parentClass
+                    ) {
                         $parentClass = $withoutAlias;
-                        break;
                     }
                 }
 
