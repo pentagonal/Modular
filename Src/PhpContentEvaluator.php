@@ -62,9 +62,9 @@ final class PhpContentEvaluator
 
     /**
      * PhpContentEvaluator constructor.
-     *
-     * @param \SplFileInfo|string|SplFileInfo $splOrString
+     * @param $splOrString
      * @param string $fileName
+     * @throws \Throwable
      */
     public function __construct($splOrString, string $fileName = '')
     {
@@ -97,7 +97,8 @@ final class PhpContentEvaluator
     }
 
     /**
-     * @return \Exception|null returning null if has no error
+     * @return \Exception
+     * @throws \Throwable
      */
     public function getException()
     {
@@ -132,6 +133,7 @@ final class PhpContentEvaluator
 
     /**
      * @return bool
+     * @throws \Throwable
      */
     public function isValid() : bool
     {
@@ -142,8 +144,8 @@ final class PhpContentEvaluator
      * Create checker from file path
      *
      * @param string $filePath
-     *
      * @return PhpContentEvaluator
+     * @throws \Throwable
      */
     public static function fromFile(string $filePath) : PhpContentEvaluator
     {
@@ -151,9 +153,9 @@ final class PhpContentEvaluator
     }
 
     /**
-     * @param \SplFileInfo|SplFileInfo|string $info
-     *
+     * @param $info
      * @return PhpContentEvaluator
+     * @throws \Throwable
      */
     public static function create($info) : PhpContentEvaluator
     {

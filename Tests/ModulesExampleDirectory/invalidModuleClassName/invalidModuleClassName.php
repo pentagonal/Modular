@@ -1,13 +1,12 @@
 <?php
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleValid
+ * Class invalidModuleClassName
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValid extends Module
+class invalidModuleClassName extends \stdClass
 {
     /**
      * @var array

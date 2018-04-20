@@ -1,13 +1,14 @@
 <?php
-namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
+/** @noinspection PhpUndefinedConstantInspection */
+namespace \\Pentagonal\Modular\Test\ModuleExampleDirectory;
 
 use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleValid
+ * Class InvalidModuleNameSpace
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValid extends Module
+class InvalidModuleNameSpace extends Module
 {
     /**
      * @var array

@@ -4,10 +4,10 @@ namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 use Pentagonal\Modular\Module;
 
 /**
- * Class ModuleValid
+ * Class ValidModuleFile
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValid extends Module
+class ValidModuleFile extends Module
 {
     /**
      * @var array

@@ -40,11 +40,22 @@ class ParserGetterTest extends TestCase
     public function testInstance()
     {
         $parserGetter = new ParserGetter();
+        $parserGetterInstance = $parserGetter->getParserInstance(
+            new \SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModuleFile')
+        );
+        $this->assertInstanceOf(
+            Parser::class,
+            $parserGetterInstance
+        );
+        $this->assertInstanceOf(
+            Parser::class,
+            $parserGetterInstance->parse()
+        );
         $this->assertInstanceOf(
             Parser::class,
             $parserGetter->getParserInstance(
-                new \SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModule')
-            )
+                new \SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModuleFile')
+            )->parse()
         );
     }
 }

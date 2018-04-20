@@ -3,11 +3,13 @@ namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
 use Pentagonal\Modular\Module;
 
+$p = $ra;
+
 /**
- * Class ModuleValid
+ * Class invalidModuleNotice
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValid extends Module
+class invalidModuleNotice extends Module
 {
     /**
      * @var array

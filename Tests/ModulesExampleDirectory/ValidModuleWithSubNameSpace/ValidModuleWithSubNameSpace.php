@@ -1,13 +1,13 @@
 <?php
 namespace Pentagonal\Modular\Test\ModuleExampleDirectory;
 
-use Pentagonal\Modular\Module;
+use Pentagonal\Modular as NS;
 
 /**
- * Class ModuleValid
+ * Class ValidModuleWithSubNameSpace
  * @package Pentagonal\Modular\Test\ModuleExampleDirectory
  */
-class ModuleValid extends Module
+class ValidModuleWithSubNameSpace extends NS\Module
 {
     /**
      * @var array

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Pentagonal\Modular\Test\PhpUnit;
 
+use Pentagonal\Modular\Override\SplFileInfo;
 use Pentagonal\Modular\PhpContentEvaluator;
 use Pentagonal\PhpEvaluator\BadSyntaxExceptions;
 use PHPUnit\Framework\TestCase;
@@ -47,6 +48,7 @@ class PhpContentEvaluatorTest extends TestCase
                 $e
             );
         }
+
         try {
             PhpContentEvaluator::fromFile(__DIR__ . '/Assets/InvalidPhpContainBuffer.php')->validate();
         } catch (\Throwable $e) {
@@ -55,31 +57,49 @@ class PhpContentEvaluatorTest extends TestCase
                 $e
             );
         }
+        try {
+            $this->assertInstanceOf(
+                PhpContentEvaluator::class,
+                new PhpContentEvaluator(new SplFileInfo(__DIR__ . '/Assets/InvalidPhpContainBuffer.php'))
+            );
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                \InvalidArgumentException::class,
+                $e
+            );
+        }
     }
 
     public function testValidation()
     {
-        $eval = new PhpContentEvaluator(file_get_contents(__DIR__ .'/Assets/ValidPhpFile.php'));
-        $this->assertEquals(
-            PhpContentEvaluator::PENDING,
-            $eval->getStatus()
-        );
-        $this->assertInstanceOf(
-            PhpContentEvaluator::class,
-            $eval->validate()
-        );
-        $this->assertEquals(
-            PhpContentEvaluator::OK,
-            $eval->getStatus()
-        );
-        $eval = PhpContentEvaluator::fromFile(__DIR__ .'/Assets/ValidPhpFile.php');
-        $this->assertEquals(
-            PhpContentEvaluator::PENDING,
-            $eval->getStatus()
-        );
-        $this->assertInstanceOf(
-            PhpContentEvaluator::class,
-            $eval->validate()
-        );
+        try {
+            $eval = new PhpContentEvaluator(file_get_contents(__DIR__ . '/Assets/ValidPhpFile.php'));
+            $this->assertEquals(
+                PhpContentEvaluator::PENDING,
+                $eval->getStatus()
+            );
+            $this->assertInstanceOf(
+                PhpContentEvaluator::class,
+                $eval->validate()
+            );
+            $this->assertEquals(
+                PhpContentEvaluator::OK,
+                $eval->getStatus()
+            );
+            $eval = PhpContentEvaluator::fromFile(__DIR__ . '/Assets/ValidPhpFile.php');
+            $this->assertEquals(
+                PhpContentEvaluator::PENDING,
+                $eval->getStatus()
+            );
+            $this->assertInstanceOf(
+                PhpContentEvaluator::class,
+                $eval->validate()
+            );
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                \InvalidArgumentException::class,
+                $e
+            );
+        }
     }
 }

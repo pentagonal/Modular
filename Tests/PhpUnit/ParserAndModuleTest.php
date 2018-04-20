@@ -36,6 +36,7 @@ use Pentagonal\Modular\Override\DirectoryIterator;
 use Pentagonal\Modular\Override\SplFileInfo;
 use Pentagonal\Modular\Parser;
 use Pentagonal\Modular\Test\ModuleExampleDirectory\ModuleValid;
+use Pentagonal\Modular\Test\ModuleExampleDirectory\ValidModuleFile;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -166,6 +167,29 @@ class ParserAndModuleTest extends TestCase
                 $e
             );
         }
+        try {
+            Parser::create(
+                new \SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModule/ModuleValid.php')
+            );
+        } catch (\Throwable $e) {
+            $this->assertInstanceOf(
+                ModulePathException::class,
+                $e
+            );
+        }
+        foreach (new DirectoryIterator(__DIR__ .'/../ModulesExampleDirectory/..') as $i) {
+            if ($i->getBasename() === '..') {
+                try {
+                    Parser::create($i->getFileInfo());
+                } catch (\Throwable $e) {
+                    $this->assertInstanceOf(
+                        ModulePathException::class,
+                        $e
+                    );
+                }
+                break;
+            }
+        }
     }
 
     public function testValidModule()
@@ -176,21 +200,28 @@ class ParserAndModuleTest extends TestCase
             Parser::class,
             $parser->parse()
         );
-
-        $this->assertNull(
-            $parser->getException()
-        );
+        try {
+            $this->assertNull(
+                $parser->getException()
+            );
+        } catch (\Exception $e) {
+            // pass
+        }
     }
 
     public function testModule()
     {
         $diValid = new SplFileInfo(__DIR__ .'/../ModulesExampleDirectory/ValidModule');
         $parser = Parser::create($diValid)->parse();
-        $module = $parser->newConstruct();
-        $this->assertInstanceOf(
-            Module::class,
-            $module
-        );
+        try {
+            $module = $parser->newConstruct();
+            $this->assertInstanceOf(
+                Module::class,
+                $module
+            );
+        } catch (\Throwable $e) {
+            // pass
+        }
         $this->assertArrayHasKey(
             Module::KEY_NAME,
             $module->finalGetInfo()

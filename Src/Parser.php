@@ -121,7 +121,7 @@ class Parser
     protected $checkedFilesMessage;
 
     /**
-     * @var \Throwable
+     * @var array
      */
     protected $exception;
 
@@ -146,6 +146,7 @@ class Parser
         $this->selector            = null;
         $this->hasParsed           = false;
         $this->spl                 = null;
+        $this->exception           = null;
         $this->checkedFilesMessage = new StorageArray();
     }
 
@@ -217,7 +218,7 @@ class Parser
     public function getModuleInstance() : Module
     {
         if (! $this->parse()->isValid()) {
-            throw $this->exception;
+            throw $this->getException();
         }
 
         return $this->moduleInstance;
@@ -264,11 +265,17 @@ class Parser
     }
 
     /**
-     * @return \Throwable|null
+     * @return null|mixed|\Throwable|\Exception
+     * @throws \ReflectionException
      */
     public function getException()
     {
-        return $this->exception;
+        $e = $this->exception;
+        if (empty($e)) {
+            return null;
+        }
+        $e = $e instanceof \Throwable ? $e : (new \ReflectionClass(array_shift($e)))->newInstanceArgs($e);
+        return $e;
     }
 
     /**
@@ -373,14 +380,15 @@ class Parser
         }
 
         if (! $this->splFileIndexed) {
-            $this->exception = new ModuleNotFoundException(
+            $this->exception = [
+                ModuleNotFoundException::class,
                 sprintf(
                     'Module for %s has not found',
                     $moduleBaseName
                 ),
                 E_NOTICE,
                 $moduleBaseName
-            );
+            ];
 
             return $this;
         }
@@ -429,7 +437,11 @@ class Parser
             $this->className      = null;
             $this->moduleInstance = null;
             $this->parentClass    = null;
-            $this->exception      = $e;
+            $this->exception      = [
+                get_class($e),
+                $e->getMessage(),
+                $e->getCode()
+            ];
         }
 
         // restore error
@@ -547,20 +559,21 @@ class Parser
         $offsetMethodInfoParenthesis = 8;
 
         // Check for module class content
-        if (empty($match[$offsetClass])        # class
+        /*if (empty($match[$offsetClass])        # class
             || empty($match[$offsetExtends])   # extends
             || empty(array_filter($match[$offsetClass]))
             || empty(array_filter($match[$offsetExtends]))
         ) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+            $this->checkedFilesMessage[$fullPath] = [
+                ModuleException::class,
                 sprintf(
                     '%s Invalid Module file.',
                     $baseName
                 )
-            );
+            ];
 
             return false;
-        }
+        }*/
 
         // null is maybe does not have name space
         // or just create namespace { code... }
@@ -590,34 +603,36 @@ class Parser
                 $nameSpace
             )
         ) {
+            $args = $nameSpace ? [
+                ModuleException::class,
+                sprintf(
+                    '%s contains invalid namespace',
+                    $baseName
+                ),
+                E_NOTICE
+            ] : null;
             // if invalid Name Space Name
-            $nameSpace &&
-                $this->checkedFilesMessage[$fullPath] = new ModuleException(
-                    sprintf(
-                        '%s contains invalid namespace',
-                        $baseName
-                    )
-                );
+            $nameSpace && $this->checkedFilesMessage[$fullPath] = $args;
 
             return false;
         }
-
-        // check if class matching criteria
+        /*
         if (!isset($validClassName[strtolower($className)])) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+            $this->checkedFilesMessage[$fullPath] = [
+                ModuleException::class,
                 sprintf(
                     'Base class of %1$s not matching criteria. Class name must be one of : %2$s',
                     $className,
                     implode(', ', $validClassName)
-                )
-            );
-
+                ),
+                E_NOTICE
+            ];
             return false;
-        }
+        }*/
 
         // if use context
         if ($parentClass[0] !== '\\') {
-            $quoted = preg_quote($parentClass, '/');
+            //$quoted = preg_quote($parentClass, '/');
             foreach ($match[$offsetUse] as $key => $value) {
                 if (trim($value) === '') {
                     continue;
@@ -648,9 +663,9 @@ class Parser
                     // eg :
                     // use Namespace\Power as PW;
                     // class module extends Pw\Module {}
-                    $quoted = preg_quote(end($ex) . '\\', '/');
-                    if (preg_match("/^{$quoted}$/", "\\{$parentClass}")) {
-                        $parentClass = "{$withoutAlias}\\{$parentClass}";
+                    $quoted = preg_quote('\\'.end($ex), '/');
+                    if (preg_match("/{$quoted}$/", "\\{$parentClass}")) {
+                        $parentClass = $withoutAlias;
                         break;
                     }
                 }
@@ -680,22 +695,34 @@ class Parser
                 || key($match[$offsetMethodFinal]) < ($offsetMethodInfoParenthesis-1)
             )
         ) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+            $this->checkedFilesMessage[$fullPath] = [
+                ModuleException::class,
                 sprintf(
                     'Class %s contains override final method',
                     $className
                 )
-            );
+            ];
 
             return false;
         }
 
-        $evaluator = PhpContentEvaluator::create($spl);
-        if (!$evaluator->isValid()) {
-            $this->checkedFilesMessage[$fullPath] = $evaluator->getException();
+        try {
+            $evaluator = PhpContentEvaluator::create($spl);
+            if (!$evaluator->isValid()) {
+                $exception = $evaluator->getException();
+                throw $exception;
+            }
+            unset($evaluator);
+        } catch (\Throwable $e) {
+            $this->checkedFilesMessage[$fullPath] = [
+                get_class($e),
+                $e->getMessage(),
+                $e->getCode()
+            ];
             return false;
         }
 
+        unset($evaluator);
         try {
             /**
              * Test if extendable Module object class
@@ -712,22 +739,26 @@ class Parser
                 ));
             }
         } catch (\Throwable $e) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+            $this->checkedFilesMessage[$fullPath] = [
+                ModuleException::class,
                 $e->getMessage(),
                 $e->getCode(),
                 $e
-            );
+            ];
             return false;
         }
 
         try {
             $reflectionExtends = new \ReflectionClass($parentClass);
         } catch (\Throwable $e) {
-            $this->checkedFilesMessage[$fullPath] = new ModuleException(sprintf(
-                'Class %1$s maybe does not extends %2$s',
-                $className,
-                Module::class
-            ));
+            $this->checkedFilesMessage[$fullPath] = [
+                ModuleException::class,
+                sprintf(
+                    'Class %1$s maybe does not extends %2$s',
+                    $className,
+                    Module::class
+                )
+            ];
 
             return false;
         }
@@ -746,12 +777,13 @@ class Parser
                 // must have return values
                 || !preg_match('~[\s\{\};]return.+~i', $getInfoInner)
             ) {
-                $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                $this->checkedFilesMessage[$fullPath] = [
+                    ModuleException::class,
                     sprintf(
                         '%1$s does not have valid return values',
                         $className
                     )
-                );
+                ];
 
                 return false;
             }
@@ -771,7 +803,11 @@ class Parser
                         );
                     }
                 } catch (\Throwable $e) {
-                    $this->checkedFilesMessage[$fullPath] = $e;
+                    $this->checkedFilesMessage[$fullPath] = [
+                        get_class($e),
+                        $e->getMessage(),
+                        $e->getCode()
+                    ];
                     return false;
                 }
 
@@ -786,13 +822,14 @@ class Parser
 
                     foreach ($matchParams[1] as $key => $value) {
                         if (empty($matchParams[2][$key])) {
-                            $this->checkedFilesMessage[$fullPath] = new ModuleException(
+                            $this->checkedFilesMessage[$fullPath] = [
+                                ModuleException::class,
                                 sprintf(
                                     'Method %1$s::%2$s() contains required parameters.',
                                     $className,
                                     $method
                                 )
-                            );
+                            ];
 
                             return false;
                         }
@@ -825,7 +862,11 @@ class Parser
                     );
                 }*/
             } catch (\Throwable $e) {
-                $this->checkedFilesMessage[$fullPath] = $e;
+                $this->checkedFilesMessage[$fullPath] = [
+                    get_class($e),
+                    $e->getMessage(),
+                    $e->getCode()
+                ];
                 return false;
             }
         }
@@ -861,7 +902,7 @@ class Parser
     public function newConstruct() : Module
     {
         if (!$this->className || ! is_subclass_of($this->className, Module::class)) {
-            throw ($this->exception?: new ModuleException(sprintf('Invalid module %s', $this->spl->getBasename())));
+            throw ($this->getException()?:new ModuleException(sprintf('Invalid module %s', $this->spl->getBasename())));
         }
 
         $object = new $this->className($this);
